@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# uv (Python package manager)
+.venv/
+.uv/
+
+# environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# venv (pyenv)
+.python-version
+
+# IDE - VS Code
+.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/snippets/
+
+# IDE - Cursor
+.cursor/
+
+# OS - macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon_
+._*
+.DocumentRevisions-V1/
+.fseventsd/
+.Spotlight-V100/
+.Trashes/
+VolumeIcon.icns
+com.apple.timemachine.donotbackup/
+.AppleDB/
+.AppleDesktop/
+Network Trash Folder/
+Temporary Items/
+.apdisk
