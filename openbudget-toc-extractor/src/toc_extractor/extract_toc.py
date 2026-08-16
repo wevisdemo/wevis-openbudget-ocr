@@ -44,13 +44,20 @@ def normalize_toc_data(toc_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return extracted_units
             
 
-def extract_pdf_toc_to_json(pdf_dir_path: str, output_path: str) -> None:
+def extract_pdf_toc_to_json(
+    pdf_dir_path: str, 
+    output_path: str,
+    normalize: bool=True
+) -> None:
     for filename in os.listdir(pdf_dir_path):
         if not filename.endswith(".pdf"):
             continue
         pdf_file = os.path.join(pdf_dir_path, filename)
         toc_data = extract_pdf_toc(pdf_file)
-        normalized_toc_data = normalize_toc_data(toc_data)
+        if normalize:
+            normalized_toc_data = normalize_toc_data(toc_data)
+        else:
+            normalized_toc_data = toc_data
         
         # Save to json
         json_output = json.dumps(normalized_toc_data, indent=4, ensure_ascii=False)
