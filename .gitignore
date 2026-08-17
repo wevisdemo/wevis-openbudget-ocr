@@ -71,3 +71,7 @@ Temporary Items/
 
 # Model
 models/*
+
+# Output
+example/*
+output/*
