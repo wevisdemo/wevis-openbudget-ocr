@@ -68,3 +68,6 @@ com.apple.timemachine.donotbackup/
 Network Trash Folder/
 Temporary Items/
 .apdisk
+
+# Model
+models/*
