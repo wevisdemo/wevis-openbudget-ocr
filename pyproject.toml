@@ -5,6 +5,7 @@ requires-python = ">=3.14"
 dependencies = [
     "PyMuPDF", 
     "toc_extractor",
+    "thai_budget_extractor"
 ]
 
 [build-system]
@@ -13,3 +14,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.uv.sources]
 toc_extractor = { path = "openbudget-toc-extractor", editable = true }
+thai_budget_extractor = { path = "openbudget-budget-extractor", editable = true }
+
+[tool.setuptools.packages.find]
+exclude = ["output*", "script*"]
