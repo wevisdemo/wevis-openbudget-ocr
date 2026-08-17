@@ -10,7 +10,7 @@ import warnings
 # Suppress the specific pin_memory warning from PyTorch
 warnings.filterwarnings("ignore", category=UserWarning, message=".*pin_memory.*")
 
-LOCAL_MODEL_DIR = 'models'
+EASYOCR_MODEL_DIR = 'models/thai-vl'
 
 class ThaiOCR():
     _instance = None
@@ -18,11 +18,11 @@ class ThaiOCR():
     @classmethod
     def get_instance(cls) -> easyocr.Reader:
         if cls._instance is None:
-            assert os.path.exists(LOCAL_MODEL_DIR), "Please add the OCR model directory."
+            assert os.path.exists(EASYOCR_MODEL_DIR), "Please add the OCR model directory."
             reader = easyocr.Reader(['th'],
                         recog_network='thai-vl',
-                        user_network_directory=LOCAL_MODEL_DIR,
-                        model_storage_directory=LOCAL_MODEL_DIR,
+                        user_network_directory=EASYOCR_MODEL_DIR,
+                        model_storage_directory=EASYOCR_MODEL_DIR,
                         detector=False,
                         gpu=True,
                         verbose=False,
