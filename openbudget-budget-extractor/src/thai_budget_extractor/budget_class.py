@@ -4,6 +4,7 @@ import pandas as pd
 from tqdm import tqdm
 from .text_ocr import read_budget_tree_in_page
 from .tree_manager import construct_tree_df
+from .constants import BUDGET_TREE_DEFAULT_COLUMNS
 
 class MinistryBudget():
     def __init__(
@@ -78,8 +79,7 @@ class OutputBudget():
     
     def read_budget_tree(self, pages: List[Page]):
         
-        tree_data = []
-        
+        tree_df = pd.DataFrame(columns=BUDGET_TREE_DEFAULT_COLUMNS)
         for page in tqdm(
             pages, 
             leave=False,
@@ -87,12 +87,14 @@ class OutputBudget():
             position=2
         ):
             budget_tree_data = read_budget_tree_in_page(page.page)
+            new_df = construct_tree_df(budget_tree_data, base_depth=4)
             # Add page number
-            for item in budget_tree_data:
-                item['page'] = page.page_num
-            tree_data.extend(budget_tree_data)
+            new_df['page'] = page.page_num
+            tree_df = pd.concat(
+                [tree_df, new_df],
+                ignore_index=True
+            )
             
-        tree_df = construct_tree_df(tree_data, base_depth=4)
         return tree_df
     
 class Page():
