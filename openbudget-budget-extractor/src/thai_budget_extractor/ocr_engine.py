@@ -13,6 +13,8 @@ import warnings
 
 # Suppress the specific pin_memory warning from PyTorch
 warnings.filterwarnings("ignore", category=UserWarning, message=".*pin_memory.*")
+# Suppress ccache warning from paddle
+warnings.filterwarnings("ignore", message="No ccache found")
 
 os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
 
@@ -88,93 +90,48 @@ class OCRManager:
         return cls._paddle_instance
 
 
-def detect_thai_text_lines(
+def detect_text_lines(
     image: npt.NDArray, kernel_size=(10, 80), min_height=10, margin=5
-) -> Tuple[List[npt.NDArray], List[List[int]]]:
-    """
-    Detects and extracts text lines from a document image, optimized for Thai text.
-
-    Parameters:
-    - image: np.array of the original image (BGR or Grayscale).
-    - kernel_size: tuple (height, width) for the dilation kernel.
-                   Height connects tone marks/vowels to base chars.
-                   Width connects characters together into a solid line.
-    - min_height: minimum pixel height of a line to be considered valid (filters noise).
-    - margin: pixels to add to the top and bottom of the cropped line image.
-
-    Returns:
-    - line_images: list of np.array (cropped image of each line)
-    - bounding_boxes: list of tuples (y_start, y_end) for each line
-    """
-
-    # 1. Convert to grayscale if it's a color image
-    if len(image.shape) == 3:
-        gray = cv2.cvtColor(
-            image, cv2.COLOR_BGR2GRAY
-        )  # pyright: ignore[reportAttributeAccessIssue]
+) -> List[Tuple[npt.NDArray, Tuple[int, int, int, int]]]:
+    
+    if len(image.shape) == 2 or (len(image.shape) == 3 and image.shape[2] == 1):
+        process_image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
     else:
-        gray = image.copy()
+        process_image = image
 
-    # 2. Binarize the image (Otsu's thresholding)
-    # We invert it (THRESH_BINARY_INV) so text becomes WHITE (255) and background BLACK (0).
-    # This is required because morphological dilation expands WHITE pixels.
-    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-
-    # 3. Dilate the image to connect characters
-    # Thai specific: We need a decent height in the kernel to pull tone marks down to the base.
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_size[1], kernel_size[0]))
-    dilated = cv2.dilate(binary, kernel, iterations=1)
-
-    # 4. Calculate Horizontal Projection Profile
-    # Sum the pixel values along the horizontal axis (rows)
-    # A sum of 0 means the row is completely black (whitespace in original document)
-    horizontal_projection = np.sum(dilated, axis=1)
-
-    # 5. Find the start and end of text lines based on the projection
-    lines = []
-    in_text = False
-    start_y = 0
-
-    # We define a small threshold in case of tiny noise specks (e.g., 255 * 5 pixels)
-    noise_threshold = 255 * 5
-
-    for y, row_sum in enumerate(horizontal_projection):
-        if not in_text and row_sum > noise_threshold:
-            # Transition from gap to text
-            in_text = True
-            start_y = y
-        elif in_text and row_sum <= noise_threshold:
-            # Transition from text to gap
-            in_text = False
-            end_y = y
-
-            # Filter out noise (lines that are too thin)
-            if (end_y - start_y) >= min_height:
-                lines.append((start_y, end_y))
-
-    # Handle edge case where image ends while still inside a text block
-    if in_text:
-        if (len(horizontal_projection) - start_y) >= min_height:
-            lines.append((start_y, len(horizontal_projection)))
-
-    # 6. Extract the line images from the ORIGINAL image
-    line_images = []
-    bounding_boxes = []
-    img_height = image.shape[0]
-
-    for start_y, end_y in lines:
-        # Add margin, but ensure it doesn't go outside image boundaries
-        y1 = max(0, start_y - margin)
-        y2 = min(img_height, end_y + margin)
-
-        # Crop from original image
-        line_img = image[y1:y2, :]
-
-        line_images.append(line_img)
-        bounding_boxes.append((y1, y2))
-
-    return line_images, bounding_boxes
-
+    detector = OCRManager.get_paddle()
+    results = detector.predict(process_image)
+    
+    text_lines = []
+    
+    if not results or results[0] is None:
+        return text_lines
+    
+    boxes = results[0].get('dt_polys', [])
+    img_h, img_w = image.shape[:2]
+    
+    for box in boxes:
+        pts = np.array(box, dtype=np.int32)
+        x_min, y_min = np.min(pts, axis=0)
+        x_max, y_max = np.max(pts, axis=0)
+        
+        x_min = max(0, x_min - margin)
+        y_min = max(0, y_min - margin)
+        x_max = min(img_w, x_max + margin)
+        y_max = min(img_h, y_max + margin)
+        
+        if (y_max - y_min) < min_height:
+            continue
+            
+        text_lines.append((
+            image[y_min:y_max, x_min:x_max], 
+            (int(x_min), int(y_min), int(x_max), int(y_max))
+        ))
+        
+    # Sort from top to bottom (y_min), then left to right (x_min)
+    text_lines.sort(key=lambda item: (item[1][1], item[1][0]))
+        
+    return text_lines
 
 def trim_line_whitespace(line_image: npt.NDArray, padding=10) -> npt.ArrayLike:
     if len(line_image.shape) == 3:
@@ -198,8 +155,12 @@ def trim_line_whitespace(line_image: npt.NDArray, padding=10) -> npt.ArrayLike:
 
 
 def extract_texts(page_img: npt.NDArray):
-    line_images, bboxes = detect_thai_text_lines(page_img)
+    text_lines = detect_text_lines(page_img)
 
+    line_images = [
+        l[0] for l in text_lines
+    ]
+    
     # Extract text for each line
     reader = OCRManager.get_easyocr()
     detector = OCRManager.get_paddle()
