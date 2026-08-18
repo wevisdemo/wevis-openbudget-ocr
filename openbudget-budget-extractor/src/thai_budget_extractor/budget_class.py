@@ -86,7 +86,7 @@ class OutputBudget():
         budget_tree = self.read_budget_tree(budget_tree_pages)
         return budget_tree
     
-    def read_budget_tree(self, pages: List[Page]):
+    def read_budget_tree(self, pages: List[Page]) -> pd.DataFrame:
         
         tree_df = pd.DataFrame(columns=BUDGET_TREE_DEFAULT_COLUMNS)
         for page in tqdm(
