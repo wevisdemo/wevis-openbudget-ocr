@@ -163,7 +163,6 @@ def extract_texts(page_img: npt.NDArray):
     
     # Extract text for each line
     reader = OCRManager.get_easyocr()
-    detector = OCRManager.get_paddle()
     
     result_texts = []
     for line_img in line_images:
