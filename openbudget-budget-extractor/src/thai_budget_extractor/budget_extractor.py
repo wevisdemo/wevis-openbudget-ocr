@@ -14,7 +14,8 @@ def extract_budget_object(
     # Load document
     doc = pymupdf.open(pdf_path)
     def get_page_np_array(page_num: int) -> npt.NDArray:
-        pix = doc.load_page(page_num).get_pixmap(colorspace=pymupdf.csGRAY, alpha=False, dpi=300)
+        page_index = page_num - 1
+        pix = doc[page_index].get_pixmap(colorspace=pymupdf.csGRAY, alpha=False, dpi=300)
         img_array = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width)
         # Adaptive thresholding handles shadows/gradients much better
         binary_img = cv2.adaptiveThreshold(
