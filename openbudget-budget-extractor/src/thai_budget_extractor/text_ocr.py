@@ -6,10 +6,10 @@ from .ocr_engine import extract_texts
 from .budget_text_manager import split_pair_budget_amount
 
 def read_budget_tree_in_page(
-    page: npt.ArrayLike,
+    page: npt.NDArray,
     top_margin_percentage: float=0.05,
 ) -> List[Dict[str, Any]]:
-    page = np.asarray(page)
+
     # Split the page into 2 parts
     white_spaces = get_white_column_ranges(page)
     biggest_white_space = sorted(
