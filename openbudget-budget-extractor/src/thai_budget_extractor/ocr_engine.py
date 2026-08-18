@@ -1,5 +1,7 @@
 from typing import Tuple, List
 import os
+import urllib.request
+import tarfile
 import cv2 as cv2
 import numpy as np
 import numpy.typing as npt
@@ -11,14 +13,51 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, message=".*pin_memory.*")
 
 EASYOCR_MODEL_DIR = 'models/thai-vl'
+EASYOCR_MODEL_URL = 'https://github.com/napatswift/naplog/releases/download/v0.0.1/thai-vl.tar.gz'
 
 class ThaiOCR():
     _instance = None
     
+    @staticmethod
+    def _download_model():
+        """Checks if the model exists, and downloads/extracts it if it doesn't."""
+        if not os.path.exists(EASYOCR_MODEL_DIR):
+            os.makedirs(EASYOCR_MODEL_DIR, exist_ok=True)
+            
+        # Check for the .pth file to ensure the model is actually extracted.
+        expected_model_file = os.path.join(EASYOCR_MODEL_DIR, 'thai-vl.pth')
+        
+        if not os.path.exists(expected_model_file):
+            print(f"Model file not found. Downloading from {EASYOCR_MODEL_URL}...")
+            try:
+                tar_path = os.path.join(EASYOCR_MODEL_DIR, 'temp_model.tar.gz')
+                
+                # Download the tar.gz file
+                urllib.request.urlretrieve(EASYOCR_MODEL_URL, tar_path)
+                
+                print("Download complete. Extracting...")
+                
+                # Open and extract the .tar.gz file
+                with tarfile.open(tar_path, 'r:gz') as tar_ref:
+                    # extractall extracts the contents to the specified path
+                    tar_ref.extractall(path=EASYOCR_MODEL_DIR)
+                    
+                # Clean up the compressed file after extraction
+                os.remove(tar_path) 
+                print("Extraction complete.")
+                
+            except Exception as e:
+                # Clean up the corrupted tar file if something goes wrong
+                if os.path.exists(tar_path):
+                    os.remove(tar_path)
+                raise RuntimeError(f"Failed to download or extract the model: {e}")
+            
     @classmethod
     def get_instance(cls) -> easyocr.Reader:
         if cls._instance is None:
-            assert os.path.exists(EASYOCR_MODEL_DIR), "Please add the OCR model directory."
+            # Check and download the model before initializing
+            cls._download_model()
+            
             reader = easyocr.Reader(['th'],
                         recog_network='thai-vl',
                         user_network_directory=EASYOCR_MODEL_DIR,
