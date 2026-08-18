@@ -9,7 +9,7 @@ from .constants import BUDGET_TREE_DEFAULT_COLUMNS
 class Page():
     def __init__(
         self,
-        page: npt.ArrayLike,
+        page: npt.NDArray,
         page_num: int
     ):
         self.page = page

@@ -91,7 +91,7 @@ class OCRManager:
 
 
 def detect_text_lines(
-    image: npt.NDArray, kernel_size=(10, 80), min_height=10, margin=5
+    image: npt.NDArray, min_height=10, margin=5
 ) -> List[Tuple[npt.NDArray, Tuple[int, int, int, int]]]:
     
     if len(image.shape) == 2 or (len(image.shape) == 3 and image.shape[2] == 1):
