@@ -6,6 +6,15 @@ from .text_ocr import read_budget_tree_in_page
 from .tree_manager import construct_tree_df
 from .constants import BUDGET_TREE_DEFAULT_COLUMNS
 
+class Page():
+    def __init__(
+        self,
+        page: npt.ArrayLike,
+        page_num: int
+    ):
+        self.page = page
+        self.page_num = page_num
+        
 class MinistryBudget():
     def __init__(
         self,
@@ -96,12 +105,3 @@ class OutputBudget():
             )
             
         return tree_df
-    
-class Page():
-    def __init__(
-        self,
-        page: npt.ArrayLike,
-        page_num: int
-    ):
-        self.page = page
-        self.page_num = page_num
