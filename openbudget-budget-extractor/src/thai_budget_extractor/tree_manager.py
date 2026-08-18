@@ -99,7 +99,6 @@ def construct_tree_df(
     
     # Construct df
     df = pd.DataFrame(tree_dict)
-    print("\n\n\n")
     # Add & Reindex to default columns
     df = df.reindex(columns=BUDGET_TREE_DEFAULT_COLUMNS, fill_value='')
     
