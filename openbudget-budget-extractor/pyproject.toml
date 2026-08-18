@@ -1,11 +1,10 @@
 [project]
 name = "thai_budget_extractor"
 version = "0.0.1"
-requires-python = ">=3.14"
 dependencies = [
     "tqdm",
     "PyMuPDF", "numpy", "opencv-python==4.10.0.84", "pandas", "pillow",
-    "torch", "torchvision", "accelerate", "easyocr"
+    "torch", "torchvision", "accelerate", "easyocr", "paddleocr>=3.7.0", "paddlepaddle"
 ]
 
 [build-system]
