@@ -133,7 +133,7 @@ def detect_text_lines(
         
     return text_lines
 
-def trim_line_whitespace(line_image: npt.NDArray, padding=10) -> npt.ArrayLike:
+def trim_line_whitespace(line_image: npt.NDArray, padding=10) -> npt.NDArray:
     if len(line_image.shape) == 3:
         gray = cv2.cvtColor(line_image, cv2.COLOR_BGR2GRAY)
     else:
