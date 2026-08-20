@@ -4,7 +4,7 @@ import cv2
 import re
 import numpy.typing as npt
 from .budget_tree_page_detector import get_white_column_ranges
-from .ocr_engine import extract_texts_from_page, detect_text_lines
+from .ocr_engine import extract_texts_from_page, detect_text_lines, read_texts
 from .budget_text_manager import split_pair_budget_amount
 
 def read_budget_tree_in_page(
@@ -90,23 +90,33 @@ def read_core_content_in_page(
         cropped_page = page[lowest_line[3]+top_margin:, :]
     
     
-    text = extract_texts(cropped_page)
+    # Detect bbox
+    text_lines = detect_text_lines(cropped_page)
     
-    # Split text into vision & mission
-    result_data = {
-        'vision': "",
-        'mission': "",
-    }
-    current_key = None
-    for line in text.splitlines():
-        if re.search(r"\d\.\s?วิสัยทัศน์", line):
-            current_key = 'vision'
+    # Separate bbox to title and content
+    all_x1 = [
+        l[1][0] for l in text_lines
+    ]
+    x_split_point = ((max(all_x1) - min(all_x1)) / 2) + min(all_x1)
+    contents = []
+    current_group = []
+    for text_line in text_lines:
+        _, bbox = text_line
+        if bbox[0] < x_split_point: # x1 < split line
+            if current_group:
+                contents.append(current_group)
+            current_group = []
             continue
-        elif re.search(r"\d\.\s?พันธกิจ", line):
-            current_key = 'mission'
-            continue
-        if current_key is not None:
-            result_data[current_key] += "\n" + line
-            result_data[current_key] = result_data[current_key].strip("\n")
+        current_group.append(text_line)
+    if current_group:
+        contents.append(current_group)
+        
+    result_data = {}
+    for topic, text_lines in zip(['vision', 'mission'], contents):
+        result_data[topic] = read_texts([
+            l[0] for l in text_lines
+        ])
+    import json
+    print(json.dumps(result_data, indent=2, ensure_ascii=False))
             
     return result_data
