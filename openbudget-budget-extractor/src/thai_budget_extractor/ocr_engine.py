@@ -209,21 +209,21 @@ def trim_line_whitespace(line_image: npt.NDArray, padding=10) -> npt.NDArray:
 
     return line_image[:, start_x:end_x]
 
-
-def extract_texts(page_img: npt.NDArray):
-    text_lines = detect_text_lines(page_img)
-
-    line_images = [
-        l[0] for l in text_lines
-    ]
-    
+def read_texts(images: List[npt.NDArray]) -> str:
     # Extract text for each line
     reader = OCRManager.get_easyocr()
     
     result_texts = []
-    for line_img in line_images:
-        img = trim_line_whitespace(line_img)
+    for _img in images:
+        img = trim_line_whitespace(_img)
         text = reader.recognize(img, blocklist=OCR_BLOCK_LIST)[0][1]  # type: ignore
         result_texts.append(text)
-
     return "\n".join(result_texts)
+
+
+def extract_texts_from_page(page_img: npt.NDArray):
+    text_lines = detect_text_lines(page_img)
+    line_images = [
+        l[0] for l in text_lines
+    ]
+    return read_texts(line_images)

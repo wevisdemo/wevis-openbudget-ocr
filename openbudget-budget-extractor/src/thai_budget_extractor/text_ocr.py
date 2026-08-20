@@ -4,7 +4,7 @@ import cv2
 import re
 import numpy.typing as npt
 from .budget_tree_page_detector import get_white_column_ranges
-from .ocr_engine import extract_texts
+from .ocr_engine import extract_texts_from_page, detect_text_lines
 from .budget_text_manager import split_pair_budget_amount
 
 def read_budget_tree_in_page(
@@ -28,8 +28,8 @@ def read_budget_tree_in_page(
     text_side = page[top_margin:, :split_point]
     budget_side = page[top_margin:, split_point:]
     
-    budget_items_texts = extract_texts(text_side)
-    budget_amounts_texts = extract_texts(budget_side)
+    budget_items_texts = extract_texts_from_page(text_side)
+    budget_amounts_texts = extract_texts_from_page(budget_side)
     
     # Split and pair data into dict objects
     budget_tree_data = split_pair_budget_amount(budget_items_texts, budget_amounts_texts)
