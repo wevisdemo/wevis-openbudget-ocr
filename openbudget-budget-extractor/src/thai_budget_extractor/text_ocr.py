@@ -116,7 +116,5 @@ def read_core_content_in_page(
         result_data[topic] = read_texts([
             l[0] for l in text_lines
         ])
-    import json
-    print(json.dumps(result_data, indent=2, ensure_ascii=False))
             
     return result_data

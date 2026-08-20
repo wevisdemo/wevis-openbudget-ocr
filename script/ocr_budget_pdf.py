@@ -15,7 +15,7 @@ if __name__ == "__main__":
     os.makedirs(OBJ_OUTPATH, exist_ok=True)
     
     # Craete TOC data index
-    # extract_pdf_toc_to_json(PDF_DIR_PATH, TOC_OUT_PATH)
+    extract_pdf_toc_to_json(PDF_DIR_PATH, TOC_OUT_PATH)
     
     # Extract budget
     for pdf_file in os.listdir(PDF_DIR_PATH):
@@ -33,5 +33,11 @@ if __name__ == "__main__":
         )
         
         for ministry in ministries:
-            df = ministry.get_budget_tree()
-            df.to_csv(f"{ministry.ministry_name}.csv", index=False)
+            # Budget Tree
+            # df = ministry.get_budget_tree()
+            # df.to_csv(f"{ministry.ministry_name}.csv", index=False)
+            
+            # Dict
+            ministry_obj = ministry.to_dict()
+            with open(os.path.join(OBJ_OUTPATH, f"{ministry.ministry_name}.json"), "w") as fj:
+                json.dump(ministry_obj, fj, indent=4, ensure_ascii=False)
