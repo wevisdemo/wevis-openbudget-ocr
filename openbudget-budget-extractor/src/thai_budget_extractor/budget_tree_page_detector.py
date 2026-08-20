@@ -2,7 +2,7 @@ import numpy as np
 import numpy.typing as npt
 import cv2
 
-def get_white_column_ranges(image_array: npt.ArrayLike, margin_percent: int = 15):
+def get_white_column_ranges(image_array: npt.NDArray, margin_percent: int = 15):
     """
     Finds ranges of columns that are completely white (255) 
     within the content area (excluding margins).
@@ -34,6 +34,6 @@ def get_white_column_ranges(image_array: npt.ArrayLike, margin_percent: int = 15
     
     return list(zip(starts, ends - 1))
 
-def is_budget_tree_page(page: npt.ArrayLike) -> bool:
+def is_budget_tree_page(page: npt.NDArray) -> bool:
     white_spaces = get_white_column_ranges(page)
     return bool(white_spaces)
