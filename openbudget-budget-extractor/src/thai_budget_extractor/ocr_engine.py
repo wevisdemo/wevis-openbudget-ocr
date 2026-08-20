@@ -89,9 +89,61 @@ class OCRManager:
             cls._paddle_instance = TextDetection(model_dir=cls.PADDLE_DIR)
         return cls._paddle_instance
 
+def filter_overlapping_bboxes(
+    bboxes: List[Tuple[int, int, int, int]], 
+    threshold: float = 0.4
+) -> List[Tuple[int, int, int, int]]:
+    
+    # Calculate area and pair with the original box
+    boxes_with_area = []
+    for box in bboxes:
+        x1, y1, x2, y2 = box
+        area = max(0, x2 - x1) * max(0, y2 - y1)
+        boxes_with_area.append((area, box))
+    
+    # Sort boxes by area descending so larger boxes are processed first
+    boxes_with_area.sort(key=lambda x: x[0], reverse=True)
+    
+    keep = [True] * len(boxes_with_area)
+    
+    for i in range(len(boxes_with_area)):
+        if not keep[i]:
+            continue
+        area_i, box_i = boxes_with_area[i]
+        x1_i, y1_i, x2_i, y2_i = box_i
+        
+        for j in range(i + 1, len(boxes_with_area)):
+            if not keep[j]:
+                continue
+            area_j, box_j = boxes_with_area[j]
+            x1_j, y1_j, x2_j, y2_j = box_j
+            
+            # Intersection coordinates
+            x1_inter = max(x1_i, x1_j)
+            y1_inter = max(y1_i, y1_j)
+            x2_inter = min(x2_i, x2_j)
+            y2_inter = min(y2_i, y2_j)
+            
+            inter_w = max(0, x2_inter - x1_inter)
+            inter_h = max(0, y2_inter - y1_inter)
+            inter_area = inter_w * inter_h
+            
+            if inter_area == 0:
+                continue
+            
+            # Overlap relative to the smaller box (box_j is always smaller or equal)
+            overlap_ratio = inter_area / area_j if area_j > 0 else 0
+            
+            # Note: For standard Intersection over Union (IoU), use:
+            # overlap_ratio = inter_area / (area_i + area_j - inter_area)
+            
+            if overlap_ratio > threshold:
+                keep[j] = False
+                
+    return [boxes_with_area[i][1] for i in range(len(boxes_with_area)) if keep[i]]
 
 def detect_text_lines(
-    image: npt.NDArray, min_height=10, margin=5
+    image: npt.NDArray, min_height=20, margin_x: int=7, margin_y: int=7
 ) -> List[Tuple[npt.NDArray, Tuple[int, int, int, int]]]:
     
     if len(image.shape) == 2 or (len(image.shape) == 3 and image.shape[2] == 1):
@@ -109,25 +161,29 @@ def detect_text_lines(
     
     boxes = results[0].get('dt_polys', [])
     img_h, img_w = image.shape[:2]
-    
+    bboxes = []
     for box in boxes:
         pts = np.array(box, dtype=np.int32)
         x_min, y_min = np.min(pts, axis=0)
         x_max, y_max = np.max(pts, axis=0)
         
-        x_min = max(0, x_min - margin)
-        y_min = max(0, y_min - margin)
-        x_max = min(img_w, x_max + margin)
-        y_max = min(img_h, y_max + margin)
+        x_min = max(0, x_min - margin_x)
+        y_min = max(0, y_min - margin_y)
+        x_max = min(img_w, x_max + margin_x)
+        y_max = min(img_h, y_max + margin_y)
         
         if (y_max - y_min) < min_height:
             continue
-            
-        text_lines.append((
-            image[y_min:y_max, x_min:x_max], 
-            (int(x_min), int(y_min), int(x_max), int(y_max))
-        ))
         
+        bboxes.append((int(x_min), int(y_min), int(x_max), int(y_max)))
+            
+    bboxes = filter_overlapping_bboxes(bboxes) # filter overlapped bboxes
+    for box in bboxes:
+        x1, y1, x2, y2 = box
+        text_lines.append((
+            image[y1:y2, x1:x2], 
+            (x1, y1, x2, y2)
+        ))
     # Sort from top to bottom (y_min), then left to right (x_min)
     text_lines.sort(key=lambda item: (item[1][1], item[1][0]))
         

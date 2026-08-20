@@ -1,8 +1,8 @@
-from typing import List
+from typing import List, Dict, Any
 import numpy.typing as npt
 import pandas as pd
 from tqdm import tqdm
-from .text_ocr import read_budget_tree_in_page
+from .text_ocr import read_budget_tree_in_page, read_core_content_in_page
 from .tree_manager import construct_tree_df
 from .constants import BUDGET_TREE_DEFAULT_COLUMNS
 
@@ -24,6 +24,41 @@ class MinistryBudget():
         self.ministry_name = ministry_name
         self.ministry_budget_page = ministry_budget_page
         self.budgetary_units: List[UnitBudget] = []
+        
+        self.vision = None
+        self.mission = None
+        
+    def get_vision(self) -> str|None:
+        if self.vision is None:
+            self.read_budget_data()
+        return self.vision
+        
+    def get_mission(self) -> str|None:
+        if self.mission is None:
+            self.read_budget_data()
+        return self.mission
+    
+    def read_budget_data(self) -> None:
+        core_content = read_core_content_in_page(self.ministry_budget_page.page)
+        self.vision = core_content.get('vision', None)
+        self.mission = core_content.get('mission', None)
+        
+    def to_dict(self) -> Dict[str, Any]:
+        
+        ministry_dict = {
+            'name': self.ministry_name,
+            'vision': self.get_vision(),
+            'mission': self.get_mission(),
+            'budgetray_units': [
+                budget_unit.to_dict() for budget_unit in tqdm(
+                    self.budgetary_units, 
+                    desc=self.ministry_name,
+                    position=0
+                )
+            ]
+        }
+        
+        return ministry_dict
         
     def get_budget_tree(self) -> pd.DataFrame:
         
@@ -52,7 +87,36 @@ class UnitBudget():
         self.unit_name = unit_name
         self.unit_budget_page = unit_budget_page
         self.outputs: List[OutputBudget] = []
+        
+        self.vision = None
+        self.mission = None
+        
+    def get_vision(self) -> str|None:
+        if self.vision is None:
+            self.read_budget_data()
+        return self.vision
+            
+    def get_mission(self) -> str|None:
+        if self.mission is None:
+            self.read_budget_data()
+        return self.mission
     
+    def read_budget_data(self) -> None:
+        core_content = read_core_content_in_page(self.unit_budget_page.page)
+        self.vision = core_content.get('vision', None)
+        self.mission = core_content.get('mission', None)
+        
+    def to_dict(self) -> Dict[str, Any]:
+            
+        budgetary_unit_dict = {
+            'name': self.unit_name,
+            'vision': self.get_vision(),
+            'mission': self.get_mission(),
+            'budget_plans': []
+        }
+        
+        return budgetary_unit_dict
+
     def get_budget_tree(self) -> pd.DataFrame:
         # TODO: OCR page to get budget amount and attach to the top of tree
         output_tree_df = pd.concat(
@@ -77,6 +141,14 @@ class OutputBudget():
     ):
         self.output_pages = output_pages
         self.output_name = None
+        
+    def to_dict(self) -> Dict[str, Any]:
+                
+        output_dict = {
+            'name': self.output_name
+        }
+        
+        return output_dict
         
        
     def get_budget_tree(self) -> pd.DataFrame:
