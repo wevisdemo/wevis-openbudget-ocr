@@ -65,21 +65,17 @@ def extract_budget_object(
         mask = [is_budget_tree_page(page.page) for page in budget_pages]
         
         output_groups = []
-        current_group = None
-        for item, is_keep in zip(budget_pages, mask):
-            if not is_keep:
-                # Start a new group when we hit a False
-                current_group = [item]
-                output_groups.append(current_group)
-            else:
-                # Append to the existing group
-                if current_group is not None:
-                    current_group.append(item)
-                else:
-                    # Handle case where mask starts with True
-                    current_group = [item]
-                    output_groups.append(current_group)
-
+        curr_group = None
+        for i, is_tree in enumerate(mask):
+            if i == 0: # first page
+                curr_group = [budget_pages[i]]
+            if not is_tree and mask[i-1]: # first page after tree
+                output_groups.append(curr_group)
+                curr_group = [budget_pages[i]]
+            curr_group.append(budget_pages[i])
+        if curr_group:
+            output_groups.append(curr_group) # add last group
+            
         budgetary_unit.outputs = [
             OutputBudget(pages) for pages in output_groups
         ]
