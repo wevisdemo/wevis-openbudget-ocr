@@ -4,11 +4,15 @@ from thai_budget_extractor import extract_budget_object
 
 PDF_DIR_PATH = "example/pdf"
 TOC_OUT_PATH = "output/toc"
+TREE_OUTPATH = "output/tree"
+OBJ_OUTPATH = "output/obj"
 
 if __name__ == "__main__":
     
     # Check and create output path
     os.makedirs(TOC_OUT_PATH, exist_ok=True)
+    os.makedirs(TREE_OUTPATH, exist_ok=True)
+    os.makedirs(OBJ_OUTPATH, exist_ok=True)
     
     # Craete TOC data index
     # extract_pdf_toc_to_json(PDF_DIR_PATH, TOC_OUT_PATH)
