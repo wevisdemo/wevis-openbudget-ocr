@@ -92,6 +92,8 @@ def read_core_content_in_page(
     
     # Detect bbox
     text_lines = detect_text_lines(cropped_page)
+    if not text_lines:
+        return {}
     
     # Separate bbox to title and content
     all_x1 = [
