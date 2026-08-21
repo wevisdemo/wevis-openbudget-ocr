@@ -65,14 +65,18 @@ def extract_budget_object(
         mask = [is_budget_tree_page(page.page) for page in budget_pages]
         
         output_groups = []
-        curr_group = None
+        curr_group = []
         for i, is_tree in enumerate(mask):
             if i == 0: # first page
                 curr_group = [budget_pages[i]]
+                continue
             if not is_tree and mask[i-1]: # first page after tree
                 output_groups.append(curr_group)
+                # Set up new group
                 curr_group = [budget_pages[i]]
-            curr_group.append(budget_pages[i])
+                continue
+            elif is_tree:
+                curr_group.append(budget_pages[i])
         if curr_group:
             output_groups.append(curr_group) # add last group
             
