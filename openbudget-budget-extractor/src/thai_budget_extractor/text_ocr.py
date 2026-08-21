@@ -137,6 +137,10 @@ def read_budget_plan_in_page(page: npt.NDArray,
     if budget_plan_matched:
         result['budget_plan_prefix'] = budget_plan_matched.group(1)
         result['budget_plan_name'] = budget_plan_matched.group(2)
+    else: # search for only `แผนงาน`
+        budget_plan_name_matched = re.search(r"แผนงาน.+?(?=$|\n)", extracted_text)
+        if budget_plan_name_matched:
+            result['budget_plan_name'] = budget_plan_name_matched.group(0)
     
     # If no budget plan; search for output header instead
     if result.get('budget_plan_prefix') is None:   
