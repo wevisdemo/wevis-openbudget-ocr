@@ -1,5 +1,6 @@
 from typing import List, Dict, Any
 import pymupdf
+import os
 import cv2
 import numpy as np
 import numpy.typing as npt
@@ -7,61 +8,66 @@ from .constants import MINISTRY_NAMES
 from .budget_class import MinistryBudget, UnitBudget, OutputBudget, Page
 from .budget_tree_page_detector import is_budget_tree_page
 
-def extract_budget_object(
-    pdf_path: str,
-    toc_data: List[Dict[str, Any]],
-) -> List[MinistryBudget]:
-    # Load document
-    doc = pymupdf.open(pdf_path)
-    def get_page_np_array(page_num: int) -> npt.NDArray:
-        page_index = page_num - 1
-        pix = doc[page_index].get_pixmap(colorspace=pymupdf.csGRAY, alpha=False, dpi=300)
-        img_array = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width)
-        # Adaptive thresholding handles shadows/gradients much better
-        binary_img = cv2.adaptiveThreshold(
-            img_array, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-            cv2.THRESH_BINARY, 11, 2
-        )
-        return binary_img
+
+class PdfDoc():
+    _doc = None
+    _path = None
     
-    # Initialize budget object
-    ministries = []
-    ministry = None
-    for toc_obj in toc_data:
-        title = toc_obj.get('unit_title', '')
-        if title in MINISTRY_NAMES:
-            if ministry is not None:
-                ministries.append(ministry)
-            # Load page into np.array
-            ministry_page_num = toc_obj.get('unit_page', 0)
-            ministry_budget_page = get_page_np_array(ministry_page_num)
-            ministry = MinistryBudget(
-                ministry_name=title,
-                ministry_budget_page=Page(ministry_budget_page, ministry_page_num)
-            )
-            continue
+    @classmethod
+    def load_doc(cls, pdf_path):
+        if pdf_path == cls._path and cls._doc is not None:
+            return cls._doc
+        else:
+            cls._doc = pymupdf.open(pdf_path)
+            cls._path = pdf_path
+        return cls._doc
+
+def load_pdf_page(pdf_path: str, page_num: int):
+    doc = PdfDoc.load_doc(pdf_path)
+    page_index = page_num - 1
+    pix = doc[page_index].get_pixmap(colorspace=pymupdf.csGRAY, alpha=False, dpi=300)
+    img_array = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width)
+    # Adaptive thresholding handles shadows/gradients much better
+    binary_img = cv2.adaptiveThreshold(
+        img_array, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+        cv2.THRESH_BINARY, 11, 2
+    )
+    return binary_img
+    
+def extract_budget_object(toc_data: Dict[str, Any], pdf_dir:str='pdf') -> MinistryBudget:
+    
+    budgetary_units = []
+    for toc_budgetary_unit in toc_data.get('budgetary_units', []):
         
-        if ministry is None:
-            continue
+        # Load page
+        unit_doc_path = toc_budgetary_unit.get('document')
+        unit_page_num = toc_budgetary_unit.get('unit_page')
+        page_img = load_pdf_page(
+            os.path.join(pdf_dir, unit_doc_path),
+            unit_page_num
+        )
         
-        unit_budget_page_num = toc_obj.get('unit_page', 0)
-        unit_budget_page = get_page_np_array(unit_budget_page_num)
+        # Instantiate UnitBudget
         budgetary_unit = UnitBudget(
-            unit_name=title,
+            unit_name=toc_budgetary_unit.get('name'),
             unit_budget_page=Page(
-                unit_budget_page,
-                unit_budget_page_num
+                page_img,
+                unit_page_num
             )
         )
         
-        # Separate & Group each output/project in budget pages
-        budget_start_page = toc_obj.get('budget_page_start', 0)
-        budget_stop_page = toc_obj.get('budget_page_stop', -1)
+        # Instantiate Outputs
+        budget_start_page = toc_budgetary_unit.get('budget_page_start', 0)
+        budget_stop_page = toc_budgetary_unit.get('budget_page_stop', -1)
         
-        budget_pages = [
-            Page(get_page_np_array(_page_num), _page_num)
-            for _page_num in range(budget_start_page, budget_stop_page)
-        ]
+        if budget_start_page is None or budget_stop_page is None or \
+            budget_stop_page < budget_start_page:
+            budget_pages = []
+        else:
+            budget_pages = [
+                Page(load_pdf_page(os.path.join(pdf_dir, unit_doc_path), _page_num), _page_num)
+                for _page_num in range(budget_start_page, budget_stop_page)
+            ]
         mask = [is_budget_tree_page(page.page) for page in budget_pages]
         
         output_groups = []
@@ -83,11 +89,16 @@ def extract_budget_object(
         budgetary_unit.outputs = [
             OutputBudget(pages) for pages in output_groups
         ]
-        ministry.budgetary_units.append(budgetary_unit)
-    
-    # Add the last ministry
-    if ministry is not None and ministry not in ministries:
-        ministries.append(ministry)
+        budgetary_units.append(budgetary_unit)
         
-    return ministries
+    ministry_doc = toc_data.get('document', '')
+    ministry = MinistryBudget(
+        toc_data.get('name', ''),
+        Page(
+            load_pdf_page(os.path.join(pdf_dir ,ministry_doc), toc_data.get('unit_page', 0)), 
+            toc_data.get('unit_page', 0)
+        ),
+    )
+    ministry.budgetary_units = budgetary_units
     
+    return ministry
