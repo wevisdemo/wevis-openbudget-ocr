@@ -116,8 +116,6 @@ class UnitBudget():
                 leave=False
             )
         ]
-        import json
-        print(json.dumps(outputs, indent=2, ensure_ascii=False))
         
         # Add each output within budget plan
         budget_plans = transform_budget_plan_data(outputs)
