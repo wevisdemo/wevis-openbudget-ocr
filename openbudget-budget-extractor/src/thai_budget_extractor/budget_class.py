@@ -151,6 +151,7 @@ class OutputBudget():
     ):
         self.output_pages = output_pages
         self.output_name = None
+        self.output_type = None
         
         # Budget plan
         self.budget_plan_prefix = None
@@ -163,6 +164,7 @@ class OutputBudget():
         self.budget_plan_prefix = bueget_plan.get('budget_plan_prefix')
         self.budget_plan_name = bueget_plan.get('budget_plan_name')
         self.output_name = bueget_plan.get('output_name')
+        self.output_type = bueget_plan.get('output_type')
         
     def to_dict(self) -> Dict[str, Any]:
         self.read_budget_plan_data()
@@ -172,7 +174,8 @@ class OutputBudget():
         output_dict = {
             'budget_plan_prefix': self.budget_plan_prefix,
             'budget_plan_name': self.budget_plan_name,
-            'name': self.output_name
+            'name': self.output_name,
+            'type': self.output_type
         }
         
         return output_dict

@@ -151,6 +151,12 @@ def read_budget_plan_in_page(page: npt.NDArray,
     output_name_matched = re.search(r"(7\.\d)\.\d\s(.+)(?=$|\n)", extracted_text)
     if output_name_matched:
         output_name = output_name_matched.group(2)
+        # Add type
+        output_type = 'OUTPUT'
+        if re.search(r"โครงการ", output_name):
+            output_type = 'PROJECT'
+        result['output_type'] = output_type
+        # Clean name
         if ":" in output_name:
             output_name = re.sub(".+?:", "", output_name).strip()
         result['output_name'] = output_name

@@ -110,7 +110,10 @@ def transform_budget_plan_data(outputs_data: List[Dict[str, str]]):
     for item in outputs_data:
         prefix = item["budget_plan_prefix"]
         name = item["budget_plan_name"]
-        output = {"name": item.get('name')}
+        output = {
+          "type": item.get('type'),
+          "name": item.get('name')
+        }
         
         if prefix not in grouped:
             grouped[prefix] = {
