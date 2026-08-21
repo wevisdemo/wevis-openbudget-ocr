@@ -123,7 +123,8 @@ def transform_budget_plan_data(outputs_data: List[Dict[str, str]]):
             
         grouped[prefix]["outputs"].append(output)
     
-    # Normalize 7.1 to contains no output
+    # Normalize 7.1
+    grouped["7.1"]["name"] = "แผนงานบุคลากรภาครัฐ"
     grouped["7.1"]["outputs"] = []
         
     return list(grouped.values())
