@@ -103,3 +103,27 @@ def construct_tree_df(
     df = df.reindex(columns=BUDGET_TREE_DEFAULT_COLUMNS, fill_value='')
     
     return df
+  
+def transform_budget_plan_data(outputs_data: List[Dict[str, str]]):
+    grouped = {}
+    
+    for item in outputs_data:
+        prefix = item["budget_plan_prefix"]
+        name = item["budget_plan_name"]
+        output = {"name": item.get('name')}
+        
+        if prefix not in grouped:
+            grouped[prefix] = {
+                "prefix": prefix,
+                "name": name,
+                "outputs": []
+            }
+        elif name is not None:
+            grouped[prefix]["name"] = name
+            
+        grouped[prefix]["outputs"].append(output)
+    
+    # Normalize 7.1 to contains no output
+    grouped["7.1"]["outputs"] = []
+        
+    return list(grouped.values())

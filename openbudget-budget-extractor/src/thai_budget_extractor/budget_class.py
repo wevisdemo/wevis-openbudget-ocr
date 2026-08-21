@@ -2,8 +2,8 @@ from typing import List, Dict, Any
 import numpy.typing as npt
 import pandas as pd
 from tqdm import tqdm
-from .text_ocr import read_budget_tree_in_page, read_core_content_in_page
-from .tree_manager import construct_tree_df
+from .text_ocr import read_budget_tree_in_page, read_core_content_in_page, read_budget_plan_in_page
+from .tree_manager import construct_tree_df, transform_budget_plan_data
 from .constants import BUDGET_TREE_DEFAULT_COLUMNS
 
 class Page():
@@ -107,15 +107,27 @@ class UnitBudget():
         self.mission = core_content.get('mission', None)
         
     def to_dict(self) -> Dict[str, Any]:
-            
-        budgetary_unit_dict = {
+        
+        outputs = [
+            output.to_dict() for output in tqdm(
+                self.outputs, 
+                desc=self.unit_name,
+                position=1,
+                leave=False
+            )
+        ]
+        import json
+        print(json.dumps(outputs, indent=2, ensure_ascii=False))
+        
+        # Add each output within budget plan
+        budget_plans = transform_budget_plan_data(outputs)
+                
+        return {
             'name': self.unit_name,
             'vision': self.get_vision(),
             'mission': self.get_mission(),
-            'budget_plans': []
+            'budget_plans': budget_plans
         }
-        
-        return budgetary_unit_dict
 
     def get_budget_tree(self) -> pd.DataFrame:
         # TODO: OCR page to get budget amount and attach to the top of tree
@@ -142,9 +154,26 @@ class OutputBudget():
         self.output_pages = output_pages
         self.output_name = None
         
+        # Budget plan
+        self.budget_plan_prefix = None
+        self.budget_plan_name = None
+        
+    def read_budget_plan_data(self) -> None:
+        budget_detail_page = self.output_pages[0]
+        bueget_plan = read_budget_plan_in_page(budget_detail_page.page)
+        
+        self.budget_plan_prefix = bueget_plan.get('budget_plan_prefix')
+        self.budget_plan_name = bueget_plan.get('budget_plan_name')
+        self.output_name = bueget_plan.get('output_name')
+        
     def to_dict(self) -> Dict[str, Any]:
-                
+        self.read_budget_plan_data()
+        
+        # TODO add output type
+        
         output_dict = {
+            'budget_plan_prefix': self.budget_plan_prefix,
+            'budget_plan_name': self.budget_plan_name,
             'name': self.output_name
         }
         

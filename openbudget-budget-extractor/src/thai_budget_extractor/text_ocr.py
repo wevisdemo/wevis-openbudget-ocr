@@ -118,3 +118,37 @@ def read_core_content_in_page(
         ])
             
     return result_data
+
+def read_budget_plan_in_page(page: npt.NDArray,
+    top_margin_percentage: float=0.05,
+    bottom_margin_percentage: float=0.2,
+) -> Dict[str, str]:
+    
+    # Crop page
+    top_margin = int(page.shape[0] * top_margin_percentage)
+    bottom_margin = int(page.shape[0] * bottom_margin_percentage)
+    cropped_page = page[top_margin:bottom_margin, :]
+    
+    extracted_text = extract_texts_from_page(cropped_page)
+    
+    result = {}
+    # Search for budget plan header
+    budget_plan_matched = re.search(r"(7\.\d)\s(.+?)(?=$|\n)", extracted_text)
+    if budget_plan_matched:
+        result['budget_plan_prefix'] = budget_plan_matched.group(1)
+        result['budget_plan_name'] = budget_plan_matched.group(2)
+    
+    # If no budget plan; search for output header instead
+    if result.get('budget_plan_prefix') is None:   
+        output_prefix_matched = re.search(r"(7\.\d)\.\d", extracted_text)
+        if output_prefix_matched:
+            result['budget_plan_prefix'] = output_prefix_matched.group(1)
+    # Search for output name
+    output_name_matched = re.search(r"(7\.\d)\.\d\s(.+)(?=$|\n)", extracted_text)
+    if output_name_matched:
+        output_name = output_name_matched.group(2)
+        if ":" in output_name:
+            output_name = re.sub(".+?:", "", output_name).strip()
+        result['output_name'] = output_name
+    
+    return result
