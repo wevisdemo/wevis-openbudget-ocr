@@ -180,8 +180,8 @@ class OutputBudget():
         
        
     def get_budget_tree(self) -> pd.DataFrame:
-        # TODO: ocr pages & construct budget tree
-        budget_detail_page = self.output_pages[0]
+        # TODO: Check and use detail
+        # If no detail exist; call read_budget_plan_data()
         budget_tree_pages = self.output_pages[1:]
         budget_tree = self.read_budget_tree(budget_tree_pages)
         return budget_tree
