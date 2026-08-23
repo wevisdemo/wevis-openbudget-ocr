@@ -1,10 +1,17 @@
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Any, Optional
+import numpy.typing as npt
 import re
 from .constants import PREFIX_PATTERNS
 
+def clean_text_prefix(text: str) -> str:
+    text = re.sub(r"(\(\d+\))([\u0e00-\u0e44].*)", r"\g<1> \g<2>", text)
+    text = re.sub(r"^(\d+\))([\u0e00-\u0e44].*)", r"\g<1> \g<2>", text)
+    text = re.sub(r"(.*[\u0e00-\u0e44])(\d+)ล้านบาท(.*)", r"\g<1> \g<2> ล้านบาท \g<3>", text)
+    return text.strip()
+
 def get_prefix_pattern(text: str) -> Tuple[str|None, int|None]:
   # Get text and extract prefix pattern and order of the prefix
-  text = text.strip()
+  text = clean_text_prefix(text)
   for pattern, order in PREFIX_PATTERNS:
     match = re.match(pattern, text)
     if match:
@@ -77,4 +84,44 @@ def split_pair_budget_amount(
         {'name': _itm, 'amount': _amt} for _itm, _amt in zip(item_name_list, amount_queue)
     ]
     return result
+
+def group_aligned_bboxes(
+    data: Tuple[List[Tuple[npt.NDArray, Tuple[int, int, int, int]]], List[Tuple[npt.NDArray, Tuple[int, int, int, int]]]], 
+    overlap_threshold: float = 0.5
+) -> List[Tuple[Tuple[npt.NDArray, Tuple[int, int, int, int]], Optional[Tuple[npt.NDArray, Tuple[int, int, int, int]]]]]:
     
+    left_data, right_data = data
+    
+    left = sorted(left_data, key=lambda b: b[1][1])
+    right = sorted(right_data, key=lambda b: b[1][1])
+    
+    grouped = []
+    i, j = 0, 0
+    
+    while i < len(left) and j < len(right):
+        l_item, r_item = left[i], right[j]
+        l_box, r_box = l_item[1], r_item[1]
+        
+        y_top = max(l_box[1], r_box[1])
+        y_bottom = min(l_box[3], r_box[3])
+        overlap = max(0, y_bottom - y_top)
+        
+        h_l = l_box[3] - l_box[1]
+        h_r = r_box[3] - r_box[1]
+        min_h = max(min(h_l, h_r), 1e-5) 
+        
+        if (overlap / min_h) >= overlap_threshold:
+            grouped.append((l_item, r_item))
+            i += 1
+            j += 1
+        elif l_box[1] < r_box[1]:
+            grouped.append((l_item, None))
+            i += 1
+        else:
+            j += 1
+            
+    while i < len(left):
+        grouped.append((left[i], None))
+        i += 1
+        
+    return grouped

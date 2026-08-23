@@ -1,6 +1,7 @@
 from typing import List, Dict, Any
 import numpy.typing as npt
 import pandas as pd
+import numpy as np
 from tqdm import tqdm
 from .text_ocr import read_budget_tree_in_page, read_core_content_in_page, read_budget_plan_in_page
 from .tree_manager import construct_tree_df, transform_budget_plan_data
@@ -157,6 +158,9 @@ class OutputBudget():
         self.budget_plan_prefix = None
         self.budget_plan_name = None
         
+        # Budget tree
+        self.budget_tree = None
+        
     def read_budget_plan_data(self) -> None:
         budget_detail_page = self.output_pages[0]
         bueget_plan = read_budget_plan_in_page(budget_detail_page.page)
@@ -167,6 +171,7 @@ class OutputBudget():
         self.output_type = bueget_plan.get('output_type')
         
     def to_dict(self) -> Dict[str, Any]:
+        # Read Budget Plan/Output details
         self.read_budget_plan_data()
         
         output_dict = {
@@ -176,6 +181,10 @@ class OutputBudget():
             'type': self.output_type
         }
         
+        # Read tree
+        if self.budget_tree is None:
+            self.budget_tree = self.get_budget_tree()
+        
         return output_dict
         
        
@@ -183,8 +192,15 @@ class OutputBudget():
         # TODO: Check and use detail
         # If no detail exist; call read_budget_plan_data()
         budget_tree_pages = self.output_pages[1:]
-        budget_tree = self.read_budget_tree(budget_tree_pages)
-        return budget_tree
+        if self.budget_tree is None:
+            budget_tree = self.read_budget_tree(budget_tree_pages)
+            # Clean budget tree
+            budget_tree.replace(r'^\s*$', np.nan, regex=True, inplace=True)
+            budget_tree.dropna(how='all', inplace=True)
+            budget_tree.fillna('')
+            # Assign back to self.budget_tree
+            self.budget_tree = budget_tree
+        return self.budget_tree
     
     def read_budget_tree(self, pages: List[Page]) -> pd.DataFrame:
         

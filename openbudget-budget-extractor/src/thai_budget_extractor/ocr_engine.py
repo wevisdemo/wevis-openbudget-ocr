@@ -142,6 +142,73 @@ def filter_overlapping_bboxes(
                 
     return [boxes_with_area[i][1] for i in range(len(boxes_with_area)) if keep[i]]
 
+def detect_amount_text_lines(
+    image: npt.NDArray, 
+    kernel_size=(10, 80), 
+    min_height=10, 
+    margin=5
+) -> List[Tuple[npt.NDArray, Tuple[int, int, int, int]]]:
+    """Extracts text lines and bounding boxes (x1, y1, x2, y2) from an image."""
+    
+    # Grayscale conversion
+    if len(image.shape) == 3:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) # pyright: ignore[reportAttributeAccessIssue]
+    else:
+        gray = image.copy()
+    
+    # Binarize (Otsu)
+    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    
+    # Dilate to connect characters
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_size[1], kernel_size[0]))
+    dilated = cv2.dilate(binary, kernel, iterations=1)
+    
+    # Horizontal projection to find y-boundaries
+    horizontal_projection = np.sum(dilated, axis=1)
+    
+    lines = []
+    in_text = False
+    start_y = 0
+    noise_threshold = 255 * 5 
+    
+    for y, row_sum in enumerate(horizontal_projection):
+        if not in_text and row_sum > noise_threshold:
+            in_text = True
+            start_y = y
+        elif in_text and row_sum <= noise_threshold:
+            in_text = False
+            if (y - start_y) >= min_height:
+                lines.append((start_y, y))
+                
+    if in_text and (len(horizontal_projection) - start_y) >= min_height:
+        lines.append((start_y, len(horizontal_projection)))
+            
+    # Find x-boundaries via vertical projection and extract crops
+    result = []
+    img_height, img_width = image.shape[:2]
+    
+    for start_y, end_y in lines:
+        line_dilated = dilated[start_y:end_y, :]
+        vertical_projection = np.sum(line_dilated, axis=0)
+        non_zero_cols = np.where(vertical_projection > 0)[0]
+        
+        if len(non_zero_cols) == 0:
+            continue 
+            
+        start_x = int(non_zero_cols[0])
+        end_x = int(non_zero_cols[-1])
+        
+        # Apply margins and clip to image boundaries
+        y1 = max(0, start_y - margin)
+        y2 = min(img_height, end_y + margin)
+        x1 = max(0, start_x - margin)
+        x2 = min(img_width, end_x + margin)
+        
+        line_img = image[y1:y2, x1:x2]
+        result.append((line_img, (x1, y1, x2, y2)))
+        
+    return result
+
 def detect_text_lines(
     image: npt.NDArray, min_height=20, margin_x: int=7, margin_y: int=7
 ) -> List[Tuple[npt.NDArray, Tuple[int, int, int, int]]]:

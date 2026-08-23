@@ -4,8 +4,8 @@ import cv2
 import re
 import numpy.typing as npt
 from .budget_tree_page_detector import get_white_column_ranges
-from .ocr_engine import extract_texts_from_page, detect_text_lines, read_texts
-from .budget_text_manager import split_pair_budget_amount
+from .ocr_engine import extract_texts_from_page, detect_text_lines, detect_amount_text_lines, read_texts
+from .budget_text_manager import group_aligned_bboxes, get_prefix_pattern, clean_text_prefix
 
 def read_budget_tree_in_page(
     page: npt.NDArray,
@@ -28,13 +28,43 @@ def read_budget_tree_in_page(
     text_side = page[top_margin:, :split_point]
     budget_side = page[top_margin:, split_point:]
     
-    budget_items_texts = extract_texts_from_page(text_side)
-    budget_amounts_texts = extract_texts_from_page(budget_side)
+    # Pair any text with amount
+    item_lines = detect_text_lines(text_side)
+    amount_line = detect_amount_text_lines(budget_side)
     
-    # Split and pair data into dict objects
-    budget_tree_data = split_pair_budget_amount(budget_items_texts, budget_amounts_texts)
+    grouped_items = group_aligned_bboxes((item_lines, amount_line))
     
-    return budget_tree_data
+    # Read text for each group
+    budget_data = []
+    for idx, (_item, _amount) in enumerate(grouped_items):
+        item_text = read_texts([_item[0]])
+        if _amount is None: # if have no amount
+            if idx == 0: continue # skip first row if amount is None
+            # Check for prefix
+            prefix, _ = get_prefix_pattern(item_text)
+            if prefix is None and budget_data:
+                budget_data[-1]['name'] += item_text
+            else: # is prefix
+                budget_data.append({
+                    'name': clean_text_prefix(item_text),
+                    'amount': None
+                })
+            continue
+        amount_text = read_texts([_amount[0]])
+        cleaned_amount_text = re.sub(r"\D", "", amount_text).strip()
+        amount = int(cleaned_amount_text) if re.search(r"\d", cleaned_amount_text) else 0
+        
+        # Check previous entry, if None; add text & amount
+        if budget_data and budget_data[-1]['amount'] is None:
+            budget_data[-1]['name'] += item_text
+            budget_data[-1]['amount'] = amount
+            continue
+        budget_data.append({
+            'name': clean_text_prefix(item_text),
+            'amount': amount
+        })
+                
+    return budget_data
 
 def detect_separator_lines(page: npt.NDArray) -> List[Tuple[int, int, int, int]]:
     # Convert to grayscale if necessary
