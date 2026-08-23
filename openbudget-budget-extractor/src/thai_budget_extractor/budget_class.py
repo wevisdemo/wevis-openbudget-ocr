@@ -169,8 +169,6 @@ class OutputBudget():
     def to_dict(self) -> Dict[str, Any]:
         self.read_budget_plan_data()
         
-        # TODO add output type
-        
         output_dict = {
             'budget_plan_prefix': self.budget_plan_prefix,
             'budget_plan_name': self.budget_plan_name,
