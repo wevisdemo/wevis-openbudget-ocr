@@ -20,11 +20,14 @@ class MinistryBudget():
     def __init__(
         self,
         ministry_name: str,
+        document: str,
         ministry_budget_page: Page
     ):
         self.ministry_name = ministry_name
         self.ministry_budget_page = ministry_budget_page
         self.budgetary_units: List[UnitBudget] = []
+        
+        self.document = document
         
         self.vision = None
         self.mission = None
@@ -83,11 +86,14 @@ class UnitBudget():
     def __init__(
         self,
         unit_name: str,
+        document: str,
         unit_budget_page: Page
     ):
         self.unit_name = unit_name
         self.unit_budget_page = unit_budget_page
         self.outputs: List[OutputBudget] = []
+        
+        self.document = document
         
         self.vision = None
         self.mission = None

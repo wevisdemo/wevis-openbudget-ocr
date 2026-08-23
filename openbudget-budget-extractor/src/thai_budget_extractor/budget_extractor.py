@@ -50,6 +50,7 @@ def extract_budget_object(toc_data: Dict[str, Any], pdf_dir:str='pdf') -> Minist
         # Instantiate UnitBudget
         budgetary_unit = UnitBudget(
             unit_name=toc_budgetary_unit.get('name'),
+            document=unit_doc_path,
             unit_budget_page=Page(
                 page_img,
                 unit_page_num
@@ -94,6 +95,7 @@ def extract_budget_object(toc_data: Dict[str, Any], pdf_dir:str='pdf') -> Minist
     ministry_doc = toc_data.get('document', '')
     ministry = MinistryBudget(
         toc_data.get('name', ''),
+        ministry_doc,
         Page(
             load_pdf_page(os.path.join(pdf_dir ,ministry_doc), toc_data.get('unit_page', 0)), 
             toc_data.get('unit_page', 0)
