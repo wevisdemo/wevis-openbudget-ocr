@@ -53,6 +53,8 @@ class MinistryBudget():
             'name': self.ministry_name,
             'vision': self.get_vision(),
             'mission': self.get_mission(),
+            'document': self.document,
+            'page': self.ministry_budget_page.page_num,
             'budgetray_units': [
                 budget_unit.to_dict() for budget_unit in tqdm(
                     self.budgetary_units, 
@@ -131,6 +133,8 @@ class UnitBudget():
             'name': self.unit_name,
             'vision': self.get_vision(),
             'mission': self.get_mission(),
+            'document': self.document,
+            'page': self.unit_budget_page.page_num,
             'budget_plans': budget_plans
         }
 
@@ -184,7 +188,9 @@ class OutputBudget():
             'budget_plan_prefix': self.budget_plan_prefix,
             'budget_plan_name': self.budget_plan_name,
             'name': self.output_name,
-            'type': self.output_type
+            'type': self.output_type,
+            'document': None,
+            'page': self.output_pages[0].page_num,
         }
         
         # Read tree

@@ -112,13 +112,17 @@ def transform_budget_plan_data(outputs_data: List[Dict[str, str]]):
         name = item["budget_plan_name"]
         output = {
           "type": item.get('type'),
-          "name": item.get('name')
+          "name": item.get('name'),
+          "document": item.get('document'),
+          "page": item.get('page'),
         }
         
         if prefix not in grouped:
             grouped[prefix] = {
                 "prefix": prefix,
                 "name": name,
+                "document": item.get('document'),
+                "page": item.get('page'),
                 "outputs": []
             }
         elif name is not None:
