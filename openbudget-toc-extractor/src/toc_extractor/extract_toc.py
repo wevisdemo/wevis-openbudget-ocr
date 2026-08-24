@@ -97,7 +97,10 @@ def convert_toc_data_to_toc(
             
         elif item.get('level') == toc_level + 2: # sub item from ministry
             unit_name = item.get('title', '0')
-            # TODO: check for รายการงบ
+            if re.search(r"^3\. รายละเอียดงบ", unit_name) and last_ministry\
+                and last_ministry.get('name') == 'งบกลาง':
+                last_ministry['budget_page_start'] = item.get('page')
+                last_ministry['budget_page_stop'] = toc_data[item_id+1].get('page')
             if re.search(r"^\d", unit_name):
                 continue
             if last_unit and last_ministry:
