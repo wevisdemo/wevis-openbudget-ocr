@@ -83,6 +83,30 @@ def split_text_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]
 
   return result_data
 
+def construct_tree_data(tree_data: List[Dict[str, Any]]) -> List[Dict]:
+  # Assign _depth to each item
+  tree_data = split_text_to_data(tree_data)
+
+  result, path = [], {}
+
+  # Dynamically grab the starting level from the first item (fallback to 0 if list is empty)
+  root_level = tree_data[0]['_level'] if tree_data else 0
+  for item in tree_data:
+      node = dict(item, children=[])
+      level = node.pop('_level')
+      
+      # If the level matches root_level, it's a root node
+      if level == root_level:
+          result.append(node)
+      else:
+          # Otherwise, append to the immediate parent
+          path[level - 1]['children'].append(node)
+          
+      path[level] = node
+
+  return result
+
+# TODO: remove this function
 def construct_tree_df(
     tree_data: List[Dict[str, Any]],
     base_depth:int = 0
@@ -115,6 +139,7 @@ def transform_budget_plan_data(outputs_data: List[Dict[str, str]]):
           "name": item.get('name'),
           "document": item.get('document'),
           "page": item.get('page'),
+          "budget_details": item.get('budget_details')
         }
         
         if prefix not in grouped:
@@ -151,7 +176,7 @@ def add_depth_and_text(budget_tree: pd.DataFrame) -> pd.DataFrame:
     )
     
     budget_tree[['_text', '_depth']] = budget_tree.apply(
-        get_text_and_depth,
+      lambda row: get_text_and_depth(row),
         axis=1, result_type='expand'
     )
     
@@ -201,3 +226,40 @@ def rearrange_budget_plan_chunks(df: pd.DataFrame):
     ).drop(columns=['prefix', 'group', '_text', '_depth']).reset_index(drop=True)
     
     return final_df
+  
+def tree_df_to_nested_dict(df: pd.DataFrame) -> List[Dict[str, Any]]:
+    result = []
+    stack = []
+    
+    for row in df.to_dict('records'):
+        depth, name = None, None
+        
+        for i in range(1, 12):
+            col = f'name_{i}'
+            if col in row and pd.notna(row[col]) and str(row[col]).strip() != '':
+                depth = i
+                name = row[col]
+                break
+                
+        if depth is None:
+            continue
+            
+        node = {
+            "name": name,
+            "amount": row.get("amount"),
+            "document": row.get("document"),
+            "page": row.get("page"),
+            "children": []
+        }
+        
+        while stack and stack[-1][0] >= depth:
+            stack.pop()
+            
+        if not stack:
+            result.append(node)
+        else:
+            stack[-1][1]["children"].append(node)
+            
+        stack.append((depth, node))
+        
+    return result

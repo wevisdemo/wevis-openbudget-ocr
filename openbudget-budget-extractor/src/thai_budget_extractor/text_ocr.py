@@ -7,7 +7,7 @@ from .budget_tree_page_detector import get_white_column_ranges
 from .ocr_engine import extract_texts_from_page, detect_text_lines, detect_amount_text_lines, read_texts
 from .budget_text_manager import group_aligned_bboxes, get_prefix_pattern, clean_text_prefix
 
-def read_budget_tree_in_page(
+def read_budget_data_in_page(
     page: npt.NDArray,
     top_margin_percentage: float=0.05,
 ) -> List[Dict[str, Any]]:

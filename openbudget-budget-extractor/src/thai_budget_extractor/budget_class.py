@@ -3,8 +3,8 @@ import numpy.typing as npt
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-from .text_ocr import read_budget_tree_in_page, read_core_content_in_page, read_budget_plan_in_page
-from .tree_manager import construct_tree_df, transform_budget_plan_data, rearrange_budget_plan_chunks
+from .text_ocr import read_budget_data_in_page, read_core_content_in_page, read_budget_plan_in_page
+from .tree_manager import construct_tree_data, transform_budget_plan_data, rearrange_budget_plan_chunks, tree_df_to_nested_dict
 from .constants import BUDGET_TREE_DEFAULT_COLUMNS
 
 class Page():
@@ -166,29 +166,29 @@ class UnitBudget():
             ignore_index=True
         )
         
-        # Combine output with same budget plan
-        budget_plans_tree_df = rearrange_budget_plan_chunks(output_tree_df)
+        # # Combine output with same budget plan
+        # budget_plans_tree_df = rearrange_budget_plan_chunks(output_tree_df)
         
-        # TODO: read amount from page instead of using sum
-        unit_header_df = pd.DataFrame(
-            [{
-                'budget_type': 'BUDGETARY_UNIT',
-                'name_2': self.unit_name,
-                'amount': output_tree_df[
-                    output_tree_df['name_3'] != ''
-                ]['amount'].sum()
-            }],
-            columns=BUDGET_TREE_DEFAULT_COLUMNS
-        ).fillna('')
+        # # TODO: read amount from page instead of using sum
+        # unit_header_df = pd.DataFrame(
+        #     [{
+        #         'budget_type': 'BUDGETARY_UNIT',
+        #         'name_2': self.unit_name,
+        #         'amount': output_tree_df[
+        #             output_tree_df['name_3'] != ''
+        #         ]['amount'].sum()
+        #     }],
+        #     columns=BUDGET_TREE_DEFAULT_COLUMNS
+        # ).fillna('')
         
-        # Add document
-        budget_unit_df = pd.concat(
-            [unit_header_df, budget_plans_tree_df],
-            ignore_index=True
-        )
-        budget_unit_df.loc[:, 'document'] = self.document
+        # # Add document
+        # budget_unit_df = pd.concat(
+        #     [unit_header_df, budget_plans_tree_df],
+        #     ignore_index=True
+        # )
+        # budget_unit_df.loc[:, 'document'] = self.document
         
-        return budget_unit_df
+        return pd.DataFrame(columns=BUDGET_TREE_DEFAULT_COLUMNS)
         
         
 class OutputBudget():
@@ -231,72 +231,36 @@ class OutputBudget():
         
         # Read tree
         if self.budget_tree is None:
-            self.budget_tree = self.get_budget_tree()
+            _ = self.get_budget_tree()
+            
+        output_dict['budget_details'] = self.budget_tree
         
         return output_dict
-        
        
     def get_budget_tree(self) -> pd.DataFrame:
-        # TODO: Check and use detail
-        # If no detail exist; call read_budget_plan_data()
-        budget_tree_pages = self.output_pages[1:]
         if self.budget_tree is None:
-            budget_tree = self.read_budget_tree(budget_tree_pages)
-            # Clean budget tree
-            budget_tree.replace(r'^\s*$', np.nan, regex=True, inplace=True)
-            budget_tree.dropna(how='all', inplace=True)
-            budget_tree.fillna('')
-            # Assign back to self.budget_tree
-            self.budget_tree = budget_tree
-        return self.budget_tree
+            self.read_budget_tree(self.output_pages[1:])
+            
+        # TODO: construct buduget tree df
+        return pd.DataFrame(columns=BUDGET_TREE_DEFAULT_COLUMNS)
     
-    def read_budget_tree(self, pages: List[Page]) -> pd.DataFrame:
+    def read_budget_tree(self, pages: List[Page]) -> None:
         
-        tree_df = pd.DataFrame(columns=BUDGET_TREE_DEFAULT_COLUMNS)
         for page in tqdm(
             pages, 
             leave=False,
             desc="process output", unit="pages",
             position=2
         ):
-            budget_tree_data = read_budget_tree_in_page(page.page)
-            new_df = construct_tree_df(budget_tree_data, base_depth=4)
-            # Add budget_type
-            new_df['budget_type'] = 'BUDGET_DETAIL'
-            new_df.loc[0, 'budget_type'] = self.output_type
-            # Add page number
-            new_df['page'] = page.page_num
+            # Read budget data
+            budget_data = read_budget_data_in_page(page.page)
+            budget_data = [
+                item for item in budget_data if item.get('name', None) is not None
+            ]
+            # Add page
+            for item in budget_data:
+                item['page'] = page.page_num
             
-            tree_df = pd.concat(
-                [tree_df, new_df],
-                ignore_index=True
-            )
-        
-        # Add budget plan
-        if {self.budget_plan_prefix} == '7.1': # normalize 7.1
-            tree_df = tree_df.drop(index=tree_df.index[1])
-            
-            tree_df.loc[0, 'budget_type'] = 'BUDGET_PLAN'
-            tree_df.loc[0, 'name_4'] = f"{self.budget_plan_prefix} {self.output_name}",
-            
-            cols_to_shift = [f"name_{i}" for i in range(1, 11+1)]
-            tree_df.loc[1:, cols_to_shift] = tree_df.loc[1:, cols_to_shift].shift(-1, axis=1)
-            tree_df.fillna('', inplace=True)
-        else:
-            tree_df = pd.concat(
-                [
-                    pd.DataFrame(
-                        [{
-                            'budget_type': 'BUDGET_PLAN',
-                            'name_3': f"{self.budget_plan_prefix} {self.budget_plan_name}",
-                            "amount": -1,
-                            "page": self.output_pages[0].page_num
-                        }],
-                        columns=BUDGET_TREE_DEFAULT_COLUMNS
-                    ),
-                    tree_df
-                ],
-                ignore_index=True
-            )
-            
-        return tree_df
+            # Convert to tree dict
+            budget_tree = construct_tree_data(budget_data)
+            self.budget_tree = budget_tree
