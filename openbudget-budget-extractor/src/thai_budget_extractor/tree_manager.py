@@ -136,3 +136,68 @@ def transform_budget_plan_data(outputs_data: List[Dict[str, str]]):
       grouped["7.1"]["outputs"] = []
         
     return list(grouped.values())
+
+def get_text_and_depth(row):
+  for i in range(1, 11+1):
+    if row[f'name_{i}'] != '':
+     return row[f'name_{i}'], i
+  return '', None
+
+def add_depth_and_text(budget_tree: pd.DataFrame) -> pd.DataFrame:
+    assert all(
+        col in budget_tree.columns for col in [
+            f"name_{n}" for n in range(1, 11+1)
+        ]
+    )
+    
+    budget_tree[['_text', '_depth']] = budget_tree.apply(
+        get_text_and_depth,
+        axis=1, result_type='expand'
+    )
+    
+    return budget_tree
+  
+def rearrange_budget_plan_chunks(df: pd.DataFrame):
+    df_work = add_depth_and_text(df.fillna(''))
+    
+    # Identify the least depth (which acts as the chunk header)
+    min_depth = df_work['_depth'].min()
+    
+    # Identify rows that are chunk headers
+    header_mask = df_work['_depth'] == min_depth
+    
+    # Extract the prefix (e.g., '7.1', '7.2') from the '_text' column of header rows
+    # .str.split().str[0] will take the first token (split by space)
+    df_work.loc[header_mask, 'prefix'] = df_work.loc[header_mask]['_text'].apply(
+      lambda text: text.split(' ')[0]
+    )
+    
+    # Forward-fill the prefix down the rows to group detail rows with their header
+    df_work['group'] = df_work['prefix'].ffill()
+    
+    merged_chunks = []
+    
+    # Group the dataframe by the prefix (e.g., all 7.2 rows are now in one group)
+    for group_name, group_df in df_work.groupby('group', sort=False):
+        
+        # Separate the group into Headers and Detail Rows
+        headers = group_df[group_df['_depth'] == min_depth]
+        details = group_df[group_df['_depth'] > min_depth]
+        
+        if not headers.empty:
+            # Find the index of the header row with the maximum length in '_text'
+            longest_idx = headers['_text'].str.contains("แผนงาน").idxmin()
+            best_header = headers.loc[[longest_idx]]
+            
+            # Reconstruct the chunk: keep only the longest header, followed by all details
+            merged = pd.concat([best_header, details])
+            merged_chunks.append(merged)
+        else:
+            merged_chunks.append(group_df)
+            
+    # Combine all chunks back into a single DataFrame and drop temporary columns
+    final_df = pd.concat(
+      merged_chunks
+    ).drop(columns=['prefix', 'group', '_text', '_depth']).reset_index(drop=True)
+    
+    return final_df

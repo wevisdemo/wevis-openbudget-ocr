@@ -164,11 +164,14 @@ def read_budget_plan_in_page(page: npt.NDArray,
     extracted_text = extract_texts_from_page(cropped_page)
     
     result = {}
-    # Search for budget plan header
+    # Search for budget plan prefix
     budget_plan_matched = re.search(r"(7\.\d)\s(.+?)(?=$|\n)", extracted_text)
     if budget_plan_matched:
         result['budget_plan_prefix'] = budget_plan_matched.group(1)
-        result['budget_plan_name'] = budget_plan_matched.group(2)
+    # Search for budget plan name
+    budget_plan_matched = re.search(r"แผนงาน.+?(?=$|\n)", extracted_text)
+    if budget_plan_matched:
+        result['budget_plan_name'] = budget_plan_matched.group(0)
     else: # search for only `แผนงาน`
         budget_plan_name_matched = re.search(r"แผนงาน.+?(?=$|\n)", extracted_text)
         if budget_plan_name_matched:

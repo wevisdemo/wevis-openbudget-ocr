@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from .text_ocr import read_budget_tree_in_page, read_core_content_in_page, read_budget_plan_in_page
-from .tree_manager import construct_tree_df, transform_budget_plan_data
+from .tree_manager import construct_tree_df, transform_budget_plan_data, rearrange_budget_plan_chunks
 from .constants import BUDGET_TREE_DEFAULT_COLUMNS
 
 class Page():
@@ -68,7 +68,6 @@ class MinistryBudget():
         
     def get_budget_tree(self) -> pd.DataFrame:
         
-        # TODO: OCR page to get budget amount and attach to the top of tree
         budgetary_unit_tree_df = pd.concat(
             [
                 budget_unit.get_budget_tree() for budget_unit in tqdm(
@@ -81,7 +80,21 @@ class MinistryBudget():
             ignore_index=True
         )
         
-        return budgetary_unit_tree_df
+        ministry_header_df = pd.DataFrame(
+            [{
+                'budget_type': 'MINISTRY',
+                'name_1': self.ministry_name,
+                'amount': budgetary_unit_tree_df[
+                    budgetary_unit_tree_df['name_2'] != ''
+                ]['amount'].sum()
+            }],
+            columns=BUDGET_TREE_DEFAULT_COLUMNS
+        ).fillna('')
+        
+        return pd.concat(
+            [ministry_header_df, budgetary_unit_tree_df],
+            ignore_index=True
+        )
         
 class UnitBudget():
     
@@ -139,7 +152,8 @@ class UnitBudget():
         }
 
     def get_budget_tree(self) -> pd.DataFrame:
-        # TODO: OCR page to get budget amount and attach to the top of tree
+        
+        # Extract all output tree
         output_tree_df = pd.concat(
             [
                 output.get_budget_tree() for output in tqdm(
@@ -152,7 +166,29 @@ class UnitBudget():
             ignore_index=True
         )
         
-        return output_tree_df
+        # Combine output with same budget plan
+        budget_plans_tree_df = rearrange_budget_plan_chunks(output_tree_df)
+        
+        # TODO: read amount from page instead of using sum
+        unit_header_df = pd.DataFrame(
+            [{
+                'budget_type': 'BUDGETARY_UNIT',
+                'name_2': self.unit_name,
+                'amount': output_tree_df[
+                    output_tree_df['name_3'] != ''
+                ]['amount'].sum()
+            }],
+            columns=BUDGET_TREE_DEFAULT_COLUMNS
+        ).fillna('')
+        
+        # Add document
+        budget_unit_df = pd.concat(
+            [unit_header_df, budget_plans_tree_df],
+            ignore_index=True
+        )
+        budget_unit_df.loc[:, 'document'] = self.document
+        
+        return budget_unit_df
         
         
 class OutputBudget():
@@ -225,10 +261,41 @@ class OutputBudget():
         ):
             budget_tree_data = read_budget_tree_in_page(page.page)
             new_df = construct_tree_df(budget_tree_data, base_depth=4)
+            # Add budget_type
+            new_df['budget_type'] = 'BUDGET_DETAIL'
+            new_df.loc[0, 'budget_type'] = self.output_type
             # Add page number
             new_df['page'] = page.page_num
+            
             tree_df = pd.concat(
                 [tree_df, new_df],
+                ignore_index=True
+            )
+        
+        # Add budget plan
+        if {self.budget_plan_prefix} == '7.1': # normalize 7.1
+            tree_df = tree_df.drop(index=tree_df.index[1])
+            
+            tree_df.loc[0, 'budget_type'] = 'BUDGET_PLAN'
+            tree_df.loc[0, 'name_4'] = f"{self.budget_plan_prefix} {self.output_name}",
+            
+            cols_to_shift = [f"name_{i}" for i in range(1, 11+1)]
+            tree_df.loc[1:, cols_to_shift] = tree_df.loc[1:, cols_to_shift].shift(-1, axis=1)
+            tree_df.fillna('', inplace=True)
+        else:
+            tree_df = pd.concat(
+                [
+                    pd.DataFrame(
+                        [{
+                            'budget_type': 'BUDGET_PLAN',
+                            'name_3': f"{self.budget_plan_prefix} {self.budget_plan_name}",
+                            "amount": -1,
+                            "page": self.output_pages[0].page_num
+                        }],
+                        columns=BUDGET_TREE_DEFAULT_COLUMNS
+                    ),
+                    tree_df
+                ],
                 ignore_index=True
             )
             
