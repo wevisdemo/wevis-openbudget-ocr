@@ -34,11 +34,16 @@ def main():
             
         ministry = extract_budget_object(toc_data)
         ministry_obj = ministry.to_dict()
-        output_file = os.path.join(OBJ_OUTPATH, f"{ministry.ministry_name}.json")
+        ministry_tree = ministry.get_budget_tree()
+        
+        json_output_file = os.path.join(OBJ_OUTPATH, f"{ministry.ministry_name}.json")
+        csv_output_file = os.path.join(TREE_OUTPATH, f"{ministry.ministry_name}.csv")
         
         # Save to json
-        with open(output_file, "w", encoding="utf-8") as fj:
+        with open(json_output_file, "w", encoding="utf-8") as fj:
             json.dump(ministry_obj, fj, indent=4, ensure_ascii=False)
+        # Save to csv
+        ministry_tree.to_csv(csv_output_file, index=False)
         
     
 if __name__ == "__main__":
