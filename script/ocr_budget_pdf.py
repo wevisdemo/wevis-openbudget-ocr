@@ -35,17 +35,19 @@ def main():
     toc_files_list = sorted(os.listdir(TOC_OUT_PATH))
     for ministry_toc in toc_files_list:
         if not ministry_toc.endswith('.json'): continue
+        ministry_name = ministry_toc.split(".")[0]
             
+        json_output_file = os.path.join(OBJ_OUTPATH, f"{ministry_name}.json")
+        csv_output_file = os.path.join(TREE_OUTPATH, f"{ministry_name}.csv")
+        
+        # Check if object is already processed; then skip
+        if SKIP_EXISTING and os.path.exists(json_output_file):
+            print(f"Skipping {ministry_name} (already exists)")
+            continue
+        
         with open(os.path.join(TOC_OUT_PATH, ministry_toc), "r") as f:
             toc_data = json.load(f)
         ministry = extract_budget_object(toc_data)
-        
-        json_output_file = os.path.join(OBJ_OUTPATH, f"{ministry.ministry_name}.json")
-        csv_output_file = os.path.join(TREE_OUTPATH, f"{ministry.ministry_name}.csv")
-        # Check if object is already processed; then skip
-        if SKIP_EXISTING and os.path.exists(json_output_file):
-            print(f"Skipping {ministry.ministry_name} (already exists)")
-            continue
         
         ministry_obj = ministry.to_dict()
         ministry_tree = ministry.get_budget_tree()
