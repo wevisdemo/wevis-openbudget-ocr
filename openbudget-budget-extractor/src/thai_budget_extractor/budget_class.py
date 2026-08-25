@@ -68,17 +68,19 @@ class MinistryBudget():
         
     def get_budget_tree(self) -> pd.DataFrame:
         
-        budgetary_unit_tree_df = pd.concat(
-            [
-                budget_unit.get_budget_tree() for budget_unit in tqdm(
-                    self.budgetary_units, 
-                    desc=self.ministry_name,
-                    position=0
-                )
-                
-            ],
-            ignore_index=True
-        )
+        budgetary_unit_tree_df = pd.DataFrame(columns=BUDGET_TREE_DEFAULT_COLUMNS)
+        if self.budgetary_units:
+            budgetary_unit_tree_df = pd.concat(
+                [
+                    budget_unit.get_budget_tree() for budget_unit in tqdm(
+                        self.budgetary_units, 
+                        desc=self.ministry_name,
+                        position=0
+                    )
+                    
+                ],
+                ignore_index=True
+            )
         
         ministry_header_df = pd.DataFrame(
             [{
@@ -154,17 +156,17 @@ class UnitBudget():
     def get_budget_tree(self) -> pd.DataFrame:
         
         # Extract all output tree
-        output_tree_df = pd.concat(
-            [
-                output.get_budget_tree() for output in tqdm(
-                    self.outputs, 
-                    leave=False,
-                    desc=self.unit_name,
-                    position=1
-                )
-            ],
-            ignore_index=True
-        )
+        # output_tree_df = pd.concat(
+        #     [
+        #         output.get_budget_tree() for output in tqdm(
+        #             self.outputs, 
+        #             leave=False,
+        #             desc=self.unit_name,
+        #             position=1
+        #         )
+        #     ],
+        #     ignore_index=True
+        # )
         
         # # Combine output with same budget plan
         # budget_plans_tree_df = rearrange_budget_plan_chunks(output_tree_df)
