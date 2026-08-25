@@ -2,10 +2,12 @@ from typing import List, Dict, Tuple, Any
 import numpy as np
 import cv2
 import re
+from rapidfuzz import fuzz
 import numpy.typing as npt
 from .budget_tree_page_detector import get_white_column_ranges
 from .ocr_engine import extract_texts_from_page, detect_text_lines, detect_amount_text_lines, read_texts
 from .budget_text_manager import group_aligned_bboxes, get_prefix_pattern, clean_text_prefix
+
 
 def read_budget_data_in_page(
     page: npt.NDArray,
@@ -91,9 +93,41 @@ def detect_separator_lines(page: npt.NDArray) -> List[Tuple[int, int, int, int]]
 
     return bboxes
 
+def get_core_content_topic(
+    text: str,
+    threshold: float=0.8
+) -> str|None:
+    
+    def get_similarity(s1, s2) -> float:
+        score = fuzz.ratio(s1, s2) / 100 # RapidFuzz returns 0-100
+        return score
+    
+    TOPIC_MATCH = [
+        'วิสัยทัศน์', 'พันธกิจ', 'วัตถุประสงค์'
+    ]
+    TOPIC_INDEX = {
+        'วิสัยทัศน์': 'vision', 
+        'พันธกิจ': 'mission', 
+        'วัตถุประสงค์': 'mission', 
+    }
+    
+    # Clean text
+    text = re.sub(r"[^\u0e00-\u0e59]", "", text).strip() # remove non-thai
+    best_match = None
+    highest_score = 0
+    
+    for topic in TOPIC_MATCH:
+        score = get_similarity(text, topic)
+        if score > highest_score and score >= threshold:
+            highest_score = score
+            best_match = topic
+    if best_match:
+        return TOPIC_INDEX.get(best_match, None)
+
 def read_core_content_in_page(
     page: npt.NDArray,
-    top_margin_percentage: float=0.05,
+    top_margin_percentage: float=0.03,
+    topic_margin_threshold: int=12
 ) -> Dict[str, str]:
     
     # Detect separator lines    
@@ -129,25 +163,38 @@ def read_core_content_in_page(
     all_x1 = [
         l[1][0] for l in text_lines
     ]
-    x_split_point = ((max(all_x1) - min(all_x1)) / 2) + min(all_x1)
-    contents = []
-    current_group = []
+    # Filtered only x1 with page width
+    filted_x1 = sorted([
+        x for x in all_x1 if x < (cropped_page.shape[1] * 0.4)
+    ])
+    header_diff = abs(filted_x1[0] - filted_x1[1]) if len(filted_x1) > 1 else 0
+    x_split_point = header_diff + topic_margin_threshold + min(filted_x1)
+    
+    # Group data
+    # TODO: make type alias global
+    contents: List[Tuple[Tuple[npt.NDArray, tuple[int, int, int, int]], List[Any]]] = []
+    current_group: Tuple[Tuple[npt.NDArray, Tuple[int, int, int, int]], List[Any]]|None = None
     for text_line in text_lines:
         _, bbox = text_line
         if bbox[0] < x_split_point: # x1 < split line
             if current_group:
                 contents.append(current_group)
-            current_group = []
+            current_group = (text_line, [])
             continue
-        current_group.append(text_line)
+        if current_group:
+            current_group[1].append(text_line)
     if current_group:
         contents.append(current_group)
         
     result_data = {}
-    for topic, text_lines in zip(['vision', 'mission'], contents):
-        result_data[topic] = read_texts([
-            l[0] for l in text_lines
-        ])
+    for topic, text_lines in contents:
+        # Read text from topic
+        topic_text = read_texts([topic[0]])
+        topic_key = get_core_content_topic(topic_text)
+        if topic_key:
+            result_data[topic_key] = read_texts([
+                l[0] for l in text_lines
+            ])
             
     return result_data
 
