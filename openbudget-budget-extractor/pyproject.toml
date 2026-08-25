@@ -2,7 +2,7 @@
 name = "thai_budget_extractor"
 version = "0.0.1"
 dependencies = [
-    "python-dotenv", "tqdm",
+    "python-dotenv", "tqdm", "rapidfuzz",
     "PyMuPDF", "numpy", "opencv-python==4.10.0.84", "pandas", "pillow",
     "torch", "torchvision", "accelerate", "easyocr", "paddleocr>=3.7.0", "paddlepaddle",
 ]
