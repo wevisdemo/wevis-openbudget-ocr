@@ -10,6 +10,8 @@ def clean_lgo_name(name: str) -> str:
     misorder_name = re.search(r"(.*)((เทศบาล)(ต.{,4}?ล|นคร|เมือง))", name)
     if misorder_name:
         name = re.sub(r"(.*)((เทศบาล)(ต.{,4}?ล|นคร|เมือง))", r"\g<2>\g<1>", name)
-    name = re.sub(r"จังหวัด.*", "", name)
+    lgo_name_with_province = re.search(r"เทศบาล.*จังหวัด", name)
+    if lgo_name_with_province:
+        name = re.sub(r"จังหวัด.*", "", name)
     return name
     
