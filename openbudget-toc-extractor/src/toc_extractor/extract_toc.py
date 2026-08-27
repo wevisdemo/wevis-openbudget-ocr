@@ -5,6 +5,28 @@ from .ministry_of_higer_education_handler import ministry_of_higer_edu_data_to_t
 from .province_group_handler import province_group_data_to_toc
 from .lgo_handler import lgo_data_to_toc
 
+def adjust_toc_levels(data_list):
+    # Find the index of the element where title is "สารบัญ"
+    target_idx = -1
+    for i, item in enumerate(data_list):
+        if item.get("title") == "สารบัญ":
+            target_idx = i
+            break  # Stop at the first occurrence
+            
+    # Check if "สารบัญ" was found AND it's not the last element in the list
+    if target_idx != -1 and target_idx + 1 < len(data_list):
+        current_level = data_list[target_idx].get("level")
+        next_level = data_list[target_idx + 1].get("level")
+        
+        # Check if the next element's level equals the "สารบัญ" level
+        if current_level is not None and current_level == next_level:
+            # Increment the level of EVERY element after "สารบัญ"
+            for j in range(target_idx + 1, len(data_list)):
+                if "level" in data_list[j]:
+                    data_list[j]["level"] += 1
+                    
+    return data_list
+
 def extract_pdf_toc(
     pdf_path: str,
 ) -> List[Dict[str, Any]]:
@@ -20,6 +42,8 @@ def extract_pdf_toc(
         {"level": item[0], "title": item[1], "doc": filename, "page": item[2]} 
         for item in toc
     ]
+    
+    toc_data = adjust_toc_levels(toc_data)
     
     # Add end doc buffer
     toc_data.append({
