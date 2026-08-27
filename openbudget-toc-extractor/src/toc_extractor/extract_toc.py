@@ -1,8 +1,7 @@
 from typing import List, Dict, Any
 import os, json, re
-from pathlib import Path
 import pymupdf
-from .constants import MINISTRY_NAMES
+from .lgo_handler import convert_lgo_data_to_toc
 
 def extract_pdf_toc(
     pdf_path: str,
@@ -48,10 +47,6 @@ def normalize_toc_data(toc_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         latest_unit = item_a
     
     return extracted_units
-            
-def convert_to_pattern(text: str) -> str:
-    pttn_text = re.sub(r"\s", r"\\s\?", text)
-    return r"^" + pttn_text
 
 def convert_toc_data_to_toc(
     toc_data: List[Dict[str, Any]],
@@ -250,61 +245,7 @@ def convert_university_ministry_data_to_toc(
     if last_unit:
         last_ministry['budgetary_units'].append(last_unit)
         
-    ministries_toc['กระทรวงการอุดมศึกษา วิทยาศาสตร์ วิจัยและนวัตกรรม'] = last_ministry
-
-def convert_lgo_data_to_toc(
-    toc_data: List[Dict[str, Any]],
-    ministries_toc: Dict[str, Any], 
-    filename: str
-):
-    toc_level = None
-    last_unit = None
-    last_province = ''
-    
-    last_ministry = ministries_toc.get('องค์กรปกครองส่วนท้องถิ่น', None)
-    if last_ministry is None:
-        last_ministry = {
-            'name': 'องค์กรปกครองส่วนท้องถิ่น',
-            "document": None,
-            "unit_page": None,
-            "budgetary_units": []
-        }
-    for item_id, item in enumerate(toc_data):
-        if item.get('title') == 'สารบัญ':
-            toc_level = item.get('level')
-            continue
-        if toc_level is None: continue # skip until found สารบัญ
-        if item.get('level') == toc_level + 1: # ministry
-            # Clean ministry name
-            ministry_name = item.get('title', '')
-            if re.search(r"1", ministry_name): # found first doc
-                last_ministry['unit_page'] = item.get('page')
-                last_ministry['document'] = filename
-        elif item.get('level') == toc_level + 2: # unit group
-            unit_name = item.get('title', '0')
-            # Check for province group
-            if re.search(r"ใน.*จังหวัด", unit_name):
-                last_province = re.search(r"จังหวัด.*", unit_name).group(0) # type: ignore
-        elif item.get('level') >= toc_level + 3: # unit
-            unit_name = item.get('title', '0')
-            if re.search(r"ใน.*จังหวัด", unit_name):
-                last_province = re.search(r"จังหวัด.*", unit_name).group(0) # type: ignore
-                continue
-            if last_unit and re.search(r"^\d", unit_name):
-                last_unit['budget_page_start'] = item.get('page')
-                last_unit['budget_page_stop'] = toc_data[item_id+1].get('page')
-                continue
-            
-            last_ministry['budgetary_units'].append(last_unit)
-            last_unit = {
-                'name': str(unit_name + " " + last_province).strip(),
-                'document': filename,
-                'unit_page': item.get('page'),
-            }
-    if last_unit:
-        last_ministry['budgetary_units'].append(last_unit)
-        
-    ministries_toc['องค์กรปกครองส่วนท้องถิ่น'] = last_ministry
+    ministries_toc['กระทรวงการอุดมศึกษา วิทยาศาสตร์ วิจัยและนวัตกรรม'] = last_ministry    
 
 def extract_pdf_toc_to_json(
     pdf_dir_path: str, 
