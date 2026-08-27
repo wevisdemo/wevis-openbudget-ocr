@@ -88,19 +88,15 @@ def lgo_data_to_toc(
             if re.search(r"1", ministry_name): # found first doc
                 last_ministry['unit_page'] = item.get('page')
                 last_ministry['document'] = filename
-        elif item.get('level') == toc_level + 2: # unit group
-            unit_name = item.get('title', '0')
-            # Check for province group
-            if re.search(r"ใน.*จังหวัด", unit_name):
-                last_province = re.search(r"จังหวัด.*", unit_name).group(0) # type: ignore
-        elif item.get('level') >= toc_level + 3: # unit
+        elif item.get('level') >= toc_level + 2: # unit
             unit_name = item.get('title', '0')
             if re.search(r"ใน.*จังหวัด", unit_name):
                 last_province = re.search(r"จังหวัด.*", unit_name).group(0) # type: ignore
                 continue
             if last_unit and re.search(r"^\d", unit_name):
-                last_unit['budget_page_start'] = item.get('page')
-                last_unit['budget_page_stop'] = toc_data[item_id+1].get('page')
+                if re.search(r"^7", unit_name):
+                    last_unit['budget_page_start'] = item.get('page')
+                    last_unit['budget_page_stop'] = toc_data[item_id+1].get('page')
                 continue
             
             last_ministry['budgetary_units'].append(last_unit)
