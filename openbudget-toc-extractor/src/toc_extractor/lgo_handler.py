@@ -58,7 +58,7 @@ def load_thailand_province_data() -> pd.DataFrame:
     
     return lgo_df
     
-def convert_lgo_data_to_toc(
+def lgo_data_to_toc(
     toc_data: List[Dict[str, Any]],
     ministries_toc: Dict[str, Any], 
     filename: str
