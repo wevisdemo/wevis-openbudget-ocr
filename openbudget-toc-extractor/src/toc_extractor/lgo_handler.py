@@ -90,11 +90,13 @@ def lgo_data_to_toc(
                 last_ministry['document'] = filename
         elif item.get('level') >= toc_level + 2: # unit
             unit_name = item.get('title', '0')
+            if re.search(r"องค์กรปกครองส่วนท้องถิ่น|ส่วนจังหวัด$", unit_name): # skip unit group
+                continue
             if re.search(r"ใน.*จังหวัด", unit_name):
                 last_province = re.search(r"จังหวัด.*", unit_name).group(0) # type: ignore
                 continue
-            if last_unit and re.search(r"^\d", unit_name):
-                if re.search(r"^7", unit_name):
+            if re.search(r"^\d", unit_name):
+                if last_unit and re.search(r"^7", unit_name):
                     last_unit['budget_page_start'] = item.get('page')
                     last_unit['budget_page_stop'] = toc_data[item_id+1].get('page')
                 continue
