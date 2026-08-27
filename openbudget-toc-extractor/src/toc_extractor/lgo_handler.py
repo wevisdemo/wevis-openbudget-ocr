@@ -99,7 +99,8 @@ def lgo_data_to_toc(
                     last_unit['budget_page_stop'] = toc_data[item_id+1].get('page')
                 continue
             
-            last_ministry['budgetary_units'].append(last_unit)
+            if last_unit:
+                last_ministry['budgetary_units'].append(last_unit)
             
             # Process unit name
             cleaned_unit_name = clean_lgo_name(unit_name)
