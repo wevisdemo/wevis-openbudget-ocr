@@ -21,6 +21,14 @@ def extract_pdf_toc(
         for item in toc
     ]
     
+    # Add end doc buffer
+    toc_data.append({
+        "level": toc_data[-1].get('level', 3) + 1,
+        "title": "999. end of doc",
+        "doc": filename,
+        "page": doc.page_count,
+    })
+    
     return toc_data
 
 def normalize_toc_data(toc_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
