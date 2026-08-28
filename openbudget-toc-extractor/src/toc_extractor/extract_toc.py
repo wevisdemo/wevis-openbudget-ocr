@@ -50,7 +50,7 @@ def extract_pdf_toc(
         "level": toc_data[-1].get('level', 3) + 1,
         "title": "999. end of doc",
         "doc": filename,
-        "page": doc.page_count,
+        "page": doc.page_count + 1,
     })
     
     return toc_data
