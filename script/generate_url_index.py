@@ -21,7 +21,7 @@ def main():
     parser.add_argument("--toc_out", default="output/toc", help="Output path for extracted Table of Content (json)")
     parser.add_argument("--url_index_out", default="output/url_index", help="Output path for extracted Table of Content (json)")
     parser.add_argument("--drafted", action="store_true", dest="is_drafted", 
-        help="Overwrite existing files instead of skipping them")
+        help="Mark whether the budget pdf is drafed version")
     
     args = parser.parse_args()
         
