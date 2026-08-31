@@ -35,6 +35,8 @@ def main():
     
     # Extract TOC data index
     extract_pdf_toc_to_json(PDF_DIR_PATH, TOC_OUT_PATH)
+    # Summarize results
+    print(f"Total toc extracted : {len([_ for _ in os.listdir(TOC_OUT_PATH) if _.endswith('.json')])}")
     
     # Load doc URL index
     with open(os.path.join(PDF_DIR_PATH, "doc_url_index.json"), "r") as f:
