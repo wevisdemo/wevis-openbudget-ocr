@@ -38,7 +38,7 @@ class LGONameMatcher:
         best_match = matched.loc[matched['score'].idxmax()]
         return f"{best_match['ชื่อ อปท']} {best_match['อำเภอ']} {best_match['จังหวัด']}"
         
-THAILAND_LGO_PATH = "example/lgo_data.csv"
+THAILAND_LGO_PATH = "data/lgo_data.csv"
 def load_thailand_province_data() -> pd.DataFrame:
 
     # Load csv

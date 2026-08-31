@@ -28,6 +28,8 @@ def get_closest_match(
             
     return None
 
+MIN_AGC_PATH = "data/min_agc_names.csv"
+
 class UnitNameManager():
     
     _unit_name_df = None
@@ -35,7 +37,7 @@ class UnitNameManager():
     @classmethod
     def get_ministry_name(cls, original_name: str) -> str:
         if cls._unit_name_df is None:
-            cls._unit_name_df = pd.read_csv('example/min_agc_names.csv')
+            cls._unit_name_df = pd.read_csv(MIN_AGC_PATH)
             
         all_ministries_name = list(cls._unit_name_df['min_name'].unique())
         matched_name = get_closest_match(
@@ -49,7 +51,7 @@ class UnitNameManager():
     @classmethod
     def get_unit_name(cls, original_name: str) -> str:
         if cls._unit_name_df is None:
-            cls._unit_name_df = pd.read_csv('example/min_agc_names.csv')
+            cls._unit_name_df = pd.read_csv(MIN_AGC_PATH)
         
         df = cls._unit_name_df
         all_units_name = list(df['agc_name'].unique())
