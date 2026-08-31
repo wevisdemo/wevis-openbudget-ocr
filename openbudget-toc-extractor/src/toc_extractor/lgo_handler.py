@@ -8,7 +8,8 @@ from thefuzz import process
 def normalize_lgo_name(lgo_name: str) -> str:
     new_name = lgo_name
     PTTRNS = (
-        r"นํ[\u0e48-\u0e4b]{,3}า", r"น้ำ",
+        r"นํ[\u0e48-\u0e4b]{1,3}า", r"น้ำ",
+        r"นํา", r"นำ",
         r"(อำเภอ|จังหวัด)", r" \g<1>",
         r"(อำเภอ.+(?=\s|$))|(จังหวัด.+(?=\s|$))", "",
     )
