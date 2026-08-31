@@ -3,7 +3,7 @@ from functools import cache
 import re
 import pandas as pd
 from .utilities import clean_lgo_name
-from rapidfuzz import fuzz
+from thefuzz import process
 
          
 class LGONameMatcher:
@@ -14,17 +14,30 @@ class LGONameMatcher:
         if cls.lgo_name_df is None:
             cls.lgo_name_df = load_thailand_province_data()
             
+        original_name = name
+        
+        # Clean name
+        name = re.sub(r"(อำเภอ|จังหวัด)", r" \g<1>", name).strip()
+        name = re.sub(r"(อำเภอ.+(?=\s|$))|(จังหวัด.+(?=\s|$))", "", name).strip()
+            
         exact_matched = cls.lgo_name_df[cls.lgo_name_df['ชื่อ อปท'] == name]
         if len(exact_matched) == 1:
             row = exact_matched.iloc[0]
             return f"{row['ชื่อ อปท']} {row['อำเภอ']} {row['จังหวัด']}"
             
         df = cls.lgo_name_df.copy()
-        df['score'] = df['ชื่อ อปท'].apply(lambda x: fuzz.ratio(name, str(x)))
+        df['score'] = df['ชื่อ อปท'].apply(lambda x: process.fuzz.ratio(name, str(x)))
         matched = df[df['score'] > 90]
         
         if matched.empty:
-            return ""
+            # use only name instead
+            lgo_name = re.sub(r"เทศบาล(ต.{,3}บล|เม.{,2}อง)", "", name)
+            exact_matched = cls.lgo_name_df[cls.lgo_name_df['ชื่อ'] == lgo_name]
+            if len(exact_matched) == 1:
+                row = exact_matched.iloc[0]
+                return f"{name} {row['อำเภอ']} {row['จังหวัด']}"
+            print(f"Cannot match : {original_name}")
+            return name
             
         if len(matched) == 1:
             row = matched.iloc[0]
