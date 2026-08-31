@@ -3,7 +3,13 @@ import numpy.typing as npt
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-from .text_ocr import read_budget_data_in_page, read_core_content_in_page, read_budget_plan_in_page, read_budget_amount_in_unit_page
+from .text_ocr import (
+    read_budget_data_in_page, 
+    read_core_content_in_page, 
+    read_budget_plan_in_page, 
+    read_budget_amount_in_unit_page,
+    read_budget_amount_in_output_page
+)
 from .tree_manager import construct_tree_data, transform_budget_plan_data, convert_budget_dict_to_df
 
 class Page():
