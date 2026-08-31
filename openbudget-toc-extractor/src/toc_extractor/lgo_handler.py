@@ -24,7 +24,6 @@ class LGONameMatcher:
         matched = df[df['score'] > 90]
         
         if matched.empty:
-            print("empty", name, province)
             return ""
             
         if len(matched) == 1:
