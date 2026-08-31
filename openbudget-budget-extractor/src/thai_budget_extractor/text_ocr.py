@@ -111,7 +111,7 @@ def crop_top_right_amount(image: npt.NDArray, margin:int=7) -> npt.NDArray:
     _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
     # Vertical dilation to group text into columns and find the rightmost one
-    kernel_v = np.ones((50, 10), np.uint8)
+    kernel_v = np.ones((gray.shape[0], 25), np.uint8)
     dilated_v = cv2.dilate(thresh, kernel_v, iterations=2)
     
     cnts_v, _ = cv2.findContours(dilated_v, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -120,7 +120,14 @@ def crop_top_right_amount(image: npt.NDArray, margin:int=7) -> npt.NDArray:
     if not cnts_v:
         return image
 
-    rects_v = sorted([cv2.boundingRect(c) for c in cnts_v], key=lambda b: b[0], reverse=True)
+    # Filter only big boxes
+    bboxes = [cv2.boundingRect(c) for c in cnts_v]
+    filtered_bboxes = [
+        bbox for bbox in bboxes if bbox[2] > 200 # remove small bboxes
+    ]
+    if not filtered_bboxes:
+        filtered_bboxes = bboxes
+    rects_v = sorted(filtered_bboxes, key=lambda b: b[0], reverse=True)
     
     x, _, w, _ = rects_v[0]
     
@@ -137,7 +144,7 @@ def crop_top_right_amount(image: npt.NDArray, margin:int=7) -> npt.NDArray:
         return image
 
     # Horizontal dilation on the cropped column to group text into rows and find the topmost one
-    kernel_h = np.ones((5, 50), np.uint8)
+    kernel_h = np.ones((10, gray.shape[1]), np.uint8)
     dilated_h = cv2.dilate(right_thresh, kernel_h, iterations=2)
     
     cnts_h, _ = cv2.findContours(dilated_h, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
