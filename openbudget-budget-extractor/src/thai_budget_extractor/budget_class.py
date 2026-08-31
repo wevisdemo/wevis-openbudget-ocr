@@ -66,7 +66,7 @@ class MinistryBudget():
         
         return ministry_dict
         
-    def get_budget_tree(self) -> pd.DataFrame:
+    def get_budget_tree_df(self) -> pd.DataFrame:
         
         budget_tree_df = convert_budget_dict_to_df(self.to_dict())
         return budget_tree_df

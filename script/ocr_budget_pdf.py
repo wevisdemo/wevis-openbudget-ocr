@@ -46,7 +46,7 @@ def main():
         ministry = extract_budget_object(toc_data, pdf_dir=PDF_DIR_PATH)
         
         ministry_obj = ministry.to_dict()
-        ministry_tree = ministry.get_budget_tree()
+        ministry_tree = ministry.get_budget_tree_df()
         
         # Save to json
         with open(json_output_file, "w", encoding="utf-8") as fj:
