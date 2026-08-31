@@ -56,7 +56,7 @@ class MinistryBudget():
             'mission': self.get_mission(),
             'document': self.document,
             'page': self.ministry_budget_page.page_num,
-            'budgetray_units': [
+            'budgetary_units': [
                 budget_unit.to_dict() for budget_unit in tqdm(
                     self.budgetary_units, 
                     desc=self.ministry_name,

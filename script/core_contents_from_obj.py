@@ -18,7 +18,7 @@ def extract_core_contents(data: Dict[str, Any]) -> pd.DataFrame:
     })
 
     # Process Budgetary Units (Nested level)
-    for unit in data.get("budgetray_units", []):
+    for unit in data.get("budgetary_units", []):
         rows.append({
             "NAME": unit.get("name"),
             "UNIT": "BUDGETARY_UNIT",
