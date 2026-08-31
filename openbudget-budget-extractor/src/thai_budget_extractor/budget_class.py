@@ -158,6 +158,7 @@ class OutputBudget():
         # Budget plan
         self.budget_plan_prefix = None
         self.budget_plan_name = None
+        self.budget_plan_amount = None
         
         # Budget tree
         self.budget_tree = None
@@ -171,6 +172,9 @@ class OutputBudget():
         self.output_name = bueget_plan.get('output_name')
         self.output_type = bueget_plan.get('output_type')
         
+        budget_amount = read_budget_amount_in_output_page(budget_detail_page.page)
+        self.budget_plan_amount = budget_amount
+        
     def to_dict(self) -> Dict[str, Any]:
         # Read Budget Plan/Output details
         self.read_budget_plan_data()
@@ -178,6 +182,7 @@ class OutputBudget():
         output_dict = {
             'budget_plan_prefix': self.budget_plan_prefix,
             'budget_plan_name': self.budget_plan_name,
+            'budget_plan_amount': self.budget_plan_amount,
             'name': self.output_name,
             'type': self.output_type,
             'page': self.output_pages[0].page_num,

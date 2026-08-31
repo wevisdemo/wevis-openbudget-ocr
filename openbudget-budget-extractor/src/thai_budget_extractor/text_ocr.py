@@ -257,6 +257,25 @@ def read_budget_amount_in_unit_page(page: npt.NDArray) -> int:
     
     return 0
 
+def read_budget_amount_in_output_page(page: npt.NDArray) -> int:
+    
+    top_margin_percentage = 0.05
+    crop_margin_percentage_y = 0.20
+    crop_margin_percentage_x = 0.70
+     # Crop page
+    top_margin = int(page.shape[0] * top_margin_percentage)
+    crop_margin_y = int(page.shape[0] * crop_margin_percentage_y)
+    crop_margin_x = int(page.shape[1] * crop_margin_percentage_x)
+    cropped_content_img = page[top_margin:crop_margin_y, crop_margin_x:]
+    
+    # Cropped only top right amount
+    amount_img = crop_top_right_amount(cropped_content_img)
+    amount_text = read_texts([amount_img])
+    
+    cleaned_amount_text = re.sub(r"\D", "", amount_text)
+    amount = int(cleaned_amount_text) if cleaned_amount_text else 0
+    return amount
+    
 def read_budget_plan_in_page(page: npt.NDArray,
     top_margin_percentage: float=0.05,
     bottom_margin_percentage: float=0.2,
