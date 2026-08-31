@@ -1,6 +1,10 @@
 import numpy as np
 import numpy.typing as npt
 import cv2
+from PIL import Image
+
+def save_image(img: npt.NDArray, out_path:str="image.jpg"):
+    Image.fromarray(img).save(out_path)
 
 def save_image_with_bboxes(image_array, bboxes, output_path="output.jpg", color=(0, 0, 255), thickness=2):
     """
