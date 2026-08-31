@@ -22,6 +22,8 @@ def main():
     parser.add_argument("--url_index_out", default="output/url_index", help="Output path for extracted Table of Content (json)")
     parser.add_argument("--drafted", action="store_true", dest="is_drafted", 
         help="Mark whether the budget pdf is drafed version")
+    parser.add_argument("--skip_gen_toc", action="store_true", dest="is_skip_gen_toc", 
+            help="Skip generate new TOC")
     
     args = parser.parse_args()
         
@@ -29,15 +31,17 @@ def main():
     TOC_OUT_PATH = args.toc_out
     URL_INDX_OUT_PATH = args.url_index_out
     IS_DRAFTED = args.is_drafted
+    IS_SKIP_GEN_TOC = args.is_skip_gen_toc
     
     os.makedirs(TOC_OUT_PATH, exist_ok=True)
     os.makedirs(URL_INDX_OUT_PATH, exist_ok=True)
     
-    # Extract TOC data index
-    extract_pdf_toc_to_json(PDF_DIR_PATH, TOC_OUT_PATH)
-    # Summarize results
-    print(f"Total toc extracted : {len([_ for _ in os.listdir(TOC_OUT_PATH) if _.endswith('.json')])}")
-    
+    if not IS_SKIP_GEN_TOC:
+        # Extract TOC data index
+        extract_pdf_toc_to_json(PDF_DIR_PATH, TOC_OUT_PATH)
+        # Summarize results
+        print(f"Total toc extracted : {len([_ for _ in os.listdir(TOC_OUT_PATH) if _.endswith('.json')])}")
+        
     # Load doc URL index
     with open(os.path.join(PDF_DIR_PATH, "doc_url_index.json"), "r") as f:
         doc_url = json.load(f)
