@@ -93,6 +93,37 @@ def detect_separator_lines(page: npt.NDArray) -> List[Tuple[int, int, int, int]]
 
     return bboxes
 
+def crop_top_right_amount(image: npt.NDArray, margin:int=7) -> npt.NDArray:
+    if len(image.shape) == 3:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = image.copy()
+        
+    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+    # 1. Vertical dilation to group text into columns and find the rightmost one
+    kernel_v = np.ones((50, 10), np.uint8)
+    dilated_v = cv2.dilate(thresh, kernel_v, iterations=2)
+    
+    cnts_v, _ = cv2.findContours(dilated_v, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    rects_v = sorted([cv2.boundingRect(c) for c in cnts_v], key=lambda b: b[0], reverse=True)
+    
+    x, _, w, _ = rects_v[0]
+    right_img = image[:, x-margin:x+w+margin]
+    right_thresh = thresh[:, x-margin:x+w+margin]
+
+    # 2. Horizontal dilation on the cropped column to group text into rows and find the topmost one
+    kernel_h = np.ones((5, 50), np.uint8)
+    dilated_h = cv2.dilate(right_thresh, kernel_h, iterations=2)
+    
+    cnts_h, _ = cv2.findContours(dilated_h, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    rects_h = sorted([cv2.boundingRect(c) for c in cnts_h], key=lambda b: b[1])
+    
+    _, yh, _, hh = rects_h[0]
+    final_crop = right_img[yh-margin:yh+hh+margin, :]
+
+    return final_crop
+
 def get_core_content_topic(
     text: str,
     threshold: float=0.8
@@ -197,6 +228,34 @@ def read_core_content_in_page(
             ])
             
     return result_data
+
+def read_budget_amount_in_unit_page(page: npt.NDArray) -> int:
+    # Detect separator lines    
+    separator_bboxes = detect_separator_lines(page)
+    if not separator_bboxes: # detect no lines
+        return 0
+    
+    # Get the lowest line and crop page again
+    separator_bboxes = sorted(
+        separator_bboxes, 
+        key=lambda bb: bb[3] # y2
+    )
+    
+    # Check if there are more than 3 lines
+    if len(separator_bboxes) >= 3:
+        y1 = separator_bboxes[1][3] # y2 of second line
+        y2 = separator_bboxes[2][1] # y1 of third line
+        # Cropped amount section
+        cropped_content = page[y1: y2, :]
+        # Cropped only top right amount
+        amount_img = crop_top_right_amount(cropped_content)
+        amount_text = read_texts([amount_img])
+        
+        cleaned_amount_text = re.sub(r"\D", "", amount_text)
+        amount = int(cleaned_amount_text) if cleaned_amount_text else 0
+        return amount
+    
+    return 0
 
 def read_budget_plan_in_page(page: npt.NDArray,
     top_margin_percentage: float=0.05,

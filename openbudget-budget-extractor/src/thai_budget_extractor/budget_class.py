@@ -3,7 +3,7 @@ import numpy.typing as npt
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-from .text_ocr import read_budget_data_in_page, read_core_content_in_page, read_budget_plan_in_page
+from .text_ocr import read_budget_data_in_page, read_core_content_in_page, read_budget_plan_in_page, read_budget_amount_in_unit_page
 from .tree_manager import construct_tree_data, transform_budget_plan_data, convert_budget_dict_to_df
 
 class Page():
@@ -31,6 +31,8 @@ class MinistryBudget():
         self.vision = None
         self.mission = None
         
+        self.amount = None
+        
     def get_vision(self) -> str|None:
         if self.vision is None:
             self.read_budget_data()
@@ -41,10 +43,17 @@ class MinistryBudget():
             self.read_budget_data()
         return self.mission
     
+    def get_budget_amount(self) -> int|None:
+        if self.amount is None:
+            self.read_budget_data()
+        return self.amount
+    
     def read_budget_data(self) -> None:
         core_content = read_core_content_in_page(self.ministry_budget_page.page)
         self.vision = core_content.get('vision', None)
         self.mission = core_content.get('mission', None)
+        budget_amount = read_budget_amount_in_unit_page(self.ministry_budget_page.page)
+        self.amount = budget_amount
         
     def to_dict(self) -> Dict[str, Any]:
         
@@ -53,6 +62,7 @@ class MinistryBudget():
             'type': 'MINISTRY',
             'vision': self.get_vision(),
             'mission': self.get_mission(),
+            'amount': self.get_budget_amount(),
             'document': self.document,
             'page': self.ministry_budget_page.page_num,
             'budgetary_units': [
@@ -88,6 +98,8 @@ class UnitBudget():
         self.vision = None
         self.mission = None
         
+        self.amount = None
+        
     def get_vision(self) -> str|None:
         if self.vision is None:
             self.read_budget_data()
@@ -98,10 +110,17 @@ class UnitBudget():
             self.read_budget_data()
         return self.mission
     
+    def get_budget_amount(self) -> int|None:
+        if self.amount is None:
+            self.read_budget_data()
+        return self.amount
+    
     def read_budget_data(self) -> None:
         core_content = read_core_content_in_page(self.unit_budget_page.page)
         self.vision = core_content.get('vision', None)
         self.mission = core_content.get('mission', None)
+        budget_amount = read_budget_amount_in_unit_page(self.unit_budget_page.page)
+        self.amount = budget_amount
         
     def to_dict(self) -> Dict[str, Any]:
         
