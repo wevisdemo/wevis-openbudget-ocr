@@ -47,7 +47,7 @@ def main():
         
         with open(os.path.join(TOC_OUT_PATH, ministry_toc), "r") as f:
             toc_data = json.load(f)
-        ministry = extract_budget_object(toc_data)
+        ministry = extract_budget_object(toc_data, pdf_dir=PDF_DIR_PATH)
         
         ministry_obj = ministry.to_dict()
         ministry_tree = ministry.get_budget_tree()
