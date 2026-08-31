@@ -5,7 +5,17 @@ import pandas as pd
 from .utilities import clean_lgo_name
 from thefuzz import process
 
-         
+def normalize_lgo_name(lgo_name: str) -> str:
+    new_name = lgo_name
+    PTTRNS = (
+        r"นํ[\u0e48-\u0e4b]{,3}า", r"น้ำ",
+        r"(อำเภอ|จังหวัด)", r" \g<1>",
+        r"(อำเภอ.+(?=\s|$))|(จังหวัด.+(?=\s|$))", "",
+    )
+    for pttrn, rplc in PTTRNS:
+        new_name = re.sub(pttrn, rplc, new_name)
+    return new_name
+    
 class LGONameMatcher:
     lgo_name_df = None
     
@@ -17,8 +27,7 @@ class LGONameMatcher:
         original_name = name
         
         # Clean name
-        name = re.sub(r"(อำเภอ|จังหวัด)", r" \g<1>", name).strip()
-        name = re.sub(r"(อำเภอ.+(?=\s|$))|(จังหวัด.+(?=\s|$))", "", name).strip()
+        name = normalize_lgo_name(name)
             
         exact_matched = cls.lgo_name_df[cls.lgo_name_df['ชื่อ อปท'] == name]
         if len(exact_matched) == 1:
