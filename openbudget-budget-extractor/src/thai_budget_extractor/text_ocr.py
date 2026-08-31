@@ -94,33 +94,66 @@ def detect_separator_lines(page: npt.NDArray) -> List[Tuple[int, int, int, int]]
     return bboxes
 
 def crop_top_right_amount(image: npt.NDArray, margin:int=7) -> npt.NDArray:
+    # Check if input image is valid
+    if image is None or image.size == 0:
+        return image
+
     if len(image.shape) == 3:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     else:
         gray = image.copy()
         
+    # Prevent Otsu from failing on blank, uniform images
+    if np.std(gray) == 0:
+        return image
+        
     _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    # 1. Vertical dilation to group text into columns and find the rightmost one
+    # Vertical dilation to group text into columns and find the rightmost one
     kernel_v = np.ones((50, 10), np.uint8)
     dilated_v = cv2.dilate(thresh, kernel_v, iterations=2)
     
     cnts_v, _ = cv2.findContours(dilated_v, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    # Check if no text/contours were found at all
+    if not cnts_v:
+        return image
+
     rects_v = sorted([cv2.boundingRect(c) for c in cnts_v], key=lambda b: b[0], reverse=True)
     
     x, _, w, _ = rects_v[0]
-    right_img = image[:, x-margin:x+w+margin]
-    right_thresh = thresh[:, x-margin:x+w+margin]
+    
+    # Clamp X coordinates so they don't go below 0 or beyond image width
+    img_h, img_w = image.shape[:2]
+    x_start = max(0, x - margin)
+    x_end = min(img_w, x + w + margin)
+    
+    right_img = image[:, x_start:x_end]
+    right_thresh = thresh[:, x_start:x_end]
 
-    # 2. Horizontal dilation on the cropped column to group text into rows and find the topmost one
+    # Check if the cropped column somehow ended up empty
+    if right_img.size == 0:
+        return image
+
+    # Horizontal dilation on the cropped column to group text into rows and find the topmost one
     kernel_h = np.ones((5, 50), np.uint8)
     dilated_h = cv2.dilate(right_thresh, kernel_h, iterations=2)
     
     cnts_h, _ = cv2.findContours(dilated_h, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    # If no horizontal rows were found in this column
+    if not cnts_h:
+        return right_img
+        
     rects_h = sorted([cv2.boundingRect(c) for c in cnts_h], key=lambda b: b[1])
     
     _, yh, _, hh = rects_h[0]
-    final_crop = right_img[yh-margin:yh+hh+margin, :]
+    
+    # Clamp Y coordinates so they don't go below 0 or beyond image height
+    y_start = max(0, yh - margin)
+    y_end = min(img_h, yh + hh + margin)
+    
+    final_crop = right_img[y_start:y_end, :]
 
     return final_crop
 

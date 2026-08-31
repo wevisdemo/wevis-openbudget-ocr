@@ -261,10 +261,14 @@ def trim_line_whitespace(line_image: npt.NDArray, padding=10) -> npt.NDArray:
         gray = cv2.cvtColor(line_image, cv2.COLOR_BGR2GRAY)
     else:
         gray = line_image.copy()
+    if np.std(gray) == 0:
+        return line_image
 
     _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
     vertical_projection = np.sum(binary, axis=0)
+    if vertical_projection is None:
+        return line_image
 
     non_zero_cols = np.where(vertical_projection > 0)[0]
 
