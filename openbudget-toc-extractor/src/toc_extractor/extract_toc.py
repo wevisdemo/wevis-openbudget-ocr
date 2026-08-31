@@ -96,69 +96,50 @@ def convert_toc_data_to_toc(
             toc_level = item.get('level')
             continue
         if toc_level is None: continue # skip until found สารบัญ
-        if item.get('level') == toc_level + 1: # ministry
-            # Clean ministry name
-            ministry_name = item.get('title', '')
-            if last_ministry:
-                clean_ministry_name = re.sub(r"\(.*\)", "", last_ministry.get('name', '')).strip()
-                # Check if already had ts ministry
-                if clean_ministry_name in ministries_toc:
-                    ministries_toc[clean_ministry_name]['budgetary_units'].extend(last_ministry['budgetary_units'])
-                    if re.search(r"\((.+)?1(.+)?\)", last_ministry.get('name', '')):
-                        ministries_toc[clean_ministry_name]['name'] = clean_ministry_name
-                        ministries_toc[clean_ministry_name]['document'] = filename
-                        ministries_toc[clean_ministry_name]['unit_page'] = item.get('page')
-                        
-                else:
-                    # check for left over unit
+        
+        title = item.get('title', '0')
+        current_lvl = item.get('level', 21)
+        doc = item.get('doc', '')
+        page = item.get('page', 0)
+        if not re.search(r"^\d", title): # found name
+            if current_lvl <= toc_level + 1:
+                # is ministry
+                if last_ministry:
+                    # Check and add last unit
                     if last_unit:
                         last_ministry['budgetary_units'].append(last_unit)
-                    ministries_toc[clean_ministry_name] = last_ministry # Add mnistry
-            
-            # new ministry
-            last_ministry = {
-                'name': ministry_name,
-                'document': filename,
-                'unit_page': item.get('page'),
-                'budgetary_units': []
-            }
-            last_unit = None
-            
-        elif item.get('level') == toc_level + 2: # sub item from ministry
-            unit_name = item.get('title', '0')
-            if re.search(r"^3\. รายละเอียดงบ", unit_name) and last_ministry\
-                and last_ministry.get('name') == 'งบกลาง':
-                last_ministry['budget_page_start'] = item.get('page')
-                last_ministry['budget_page_stop'] = toc_data[item_id+1].get('page')
-            if re.search(r"^\d", unit_name):
+                    ministry_name = last_ministry.get('name', '').strip()
+                    ministries_toc[ministry_name] = last_ministry
+                last_ministry = {
+                    'name': title,
+                    'document': doc,
+                    'unit_page': page,
+                    'budgetary_units': []
+                }
+                last_unit = None # reset unit for new ministry
                 continue
-            if last_unit and last_ministry:
+            # is budgetary unit
+            elif last_unit and last_ministry:
                 last_ministry['budgetary_units'].append(last_unit)
             last_unit = {
-                'name': unit_name,
-                'document': filename,
-                'unit_page': item.get('page'),
-                'budget_page_start': None,
-                'budget_page_stop': None,
+                'name': title,
+                'document': doc,
+                'unit_page': page,
             }
-        elif item.get('level') == toc_level + 3: # budget
-            detail_header = item.get('title', '')
-            if last_unit and re.search(r"7\.", detail_header):
-                last_unit['budget_page_start'] = item.get('page')
+        # Check 7.
+        if re.search(r"^7\.", title): # found budget plan
+            if last_unit:
+                last_unit['budget_page_start'] = page
                 last_unit['budget_page_stop'] = toc_data[item_id+1].get('page')
-    
-    # Add the last ministry                    
-    if last_ministry:
-        clean_ministry_name = re.sub(r"\(.*\)", "", last_ministry.get('name', '')).strip()
-        last_ministry['name'] = clean_ministry_name
-        if last_unit:
-            last_ministry['budgetary_units'].append(last_unit)
+        # Handle งบกลาง
+        if re.search(r"^3\. รายละเอียดงบ", title) \
+            and last_ministry and last_ministry.get('name') == 'งบกลาง': # found budget plan
+                last_ministry['budget_page_start'] = page
+                last_ministry['budget_page_stop'] = toc_data[item_id+1].get('page')
             
-        # Check if already had ts ministry
-        if ministry_name in ministries_toc:
-            ministries_toc[clean_ministry_name]['budgetary_units'].extend(last_ministry['budgetary_units'])
-        else:
-            ministries_toc[clean_ministry_name] = last_ministry # Add mnistry
+    if last_unit and last_ministry:
+        last_ministry['budgetary_units'].append(last_unit)
+        ministries_toc[last_ministry.get('name', '').strip()] = last_ministry
 
 def extract_pdf_toc_to_json(
     pdf_dir_path: str, 
