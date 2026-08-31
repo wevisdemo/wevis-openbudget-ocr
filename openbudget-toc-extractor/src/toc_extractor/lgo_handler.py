@@ -114,6 +114,8 @@ def lgo_data_to_toc(
             unit_name = item.get('title', '0')
             if re.search(r"องค์กรปกครองส่วนท้องถิ่น|ส่วนจังหวัด$", unit_name): # skip unit group
                 continue
+            if re.search(r"เทศบาล(ตำบล|เมือง|นคร)$", unit_name): # skip unit group
+                continue
             if re.search(r"ใน.*จังหวัด", unit_name):
                 last_province = re.search(r"จังหวัด.*", unit_name).group(0) # type: ignore
                 continue
