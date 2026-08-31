@@ -4,6 +4,7 @@ import pymupdf
 from .ministry_of_higer_education_handler import ministry_of_higer_edu_data_to_toc
 from .province_group_handler import province_group_data_to_toc
 from .lgo_handler import lgo_data_to_toc
+from .unit_name_manager import UnitNameManager
 
 def adjust_toc_levels(data_list):
     # Find the index of the element where title is "สารบัญ"
@@ -111,7 +112,7 @@ def convert_toc_data_to_toc(
                     ministry_name = last_ministry.get('name', '').strip()
                     ministries_toc[ministry_name] = last_ministry
                 last_ministry = {
-                    'name': title,
+                    'name': UnitNameManager.get_ministry_name(title).strip(),
                     'document': doc,
                     'unit_page': page,
                     'budgetary_units': []
@@ -121,6 +122,9 @@ def convert_toc_data_to_toc(
             # is budgetary unit
             elif last_unit and last_ministry:
                 last_ministry['budgetary_units'].append(last_unit)
+                title = UnitNameManager.get_unit_name(
+                    title
+                ).strip()
             last_unit = {
                 'name': title,
                 'document': doc,

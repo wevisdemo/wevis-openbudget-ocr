@@ -2,7 +2,7 @@
 name = "toc_extractor"
 version = "0.0.1"
 dependencies = [
-    "PyMuPDF"
+    "PyMuPDF","thefuzz", "python-Levenshtein"
 ]
 
 [build-system]
