@@ -155,41 +155,6 @@ class UnitBudget():
 
     def get_budget_tree(self) -> pd.DataFrame:
         
-        # Extract all output tree
-        # output_tree_df = pd.concat(
-        #     [
-        #         output.get_budget_tree() for output in tqdm(
-        #             self.outputs, 
-        #             leave=False,
-        #             desc=self.unit_name,
-        #             position=1
-        #         )
-        #     ],
-        #     ignore_index=True
-        # )
-        
-        # # Combine output with same budget plan
-        # budget_plans_tree_df = rearrange_budget_plan_chunks(output_tree_df)
-        
-        # # TODO: read amount from page instead of using sum
-        # unit_header_df = pd.DataFrame(
-        #     [{
-        #         'budget_type': 'BUDGETARY_UNIT',
-        #         'name_2': self.unit_name,
-        #         'amount': output_tree_df[
-        #             output_tree_df['name_3'] != ''
-        #         ]['amount'].sum()
-        #     }],
-        #     columns=BUDGET_TREE_DEFAULT_COLUMNS
-        # ).fillna('')
-        
-        # # Add document
-        # budget_unit_df = pd.concat(
-        #     [unit_header_df, budget_plans_tree_df],
-        #     ignore_index=True
-        # )
-        # budget_unit_df.loc[:, 'document'] = self.document
-        
         return pd.DataFrame(columns=BUDGET_TREE_DEFAULT_COLUMNS)
         
         
