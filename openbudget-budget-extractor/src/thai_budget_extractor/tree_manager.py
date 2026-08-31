@@ -15,6 +15,7 @@ def split_text_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]
   for item in input_data:
     title = item['name']
     amount_val = item['amount']
+    page_num = item['page']
     
     if len(prefixes_stack) == 0:
       prefix, order = get_prefix_pattern(title)
@@ -22,6 +23,7 @@ def split_text_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]
       result_data.append({
           'name': title,
           'amount': amount_val,
+          'page': page_num,
           '_level': current_depth
       })
       continue
@@ -35,6 +37,7 @@ def split_text_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]
       result_data.append({
           'name': title,
           'amount': amount_val,
+          'page': page_num,
           '_level': current_depth
       })
       continue
@@ -48,6 +51,7 @@ def split_text_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]
       result_data.append({
           'name': title,
           'amount': amount_val,
+          'page': page_num,
           '_level': current_depth
       })
       continue
@@ -68,6 +72,7 @@ def split_text_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]
       result_data.append({
           'name': title,
           'amount': amount_val,
+          'page': page_num,
           '_level': current_depth
       })
       continue
@@ -78,6 +83,7 @@ def split_text_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]
     result_data.append({
         'name': title,
         'amount': amount_val,
+        'page': page_num,
         '_level': current_depth
     })
 
