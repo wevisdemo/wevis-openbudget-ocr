@@ -4,8 +4,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from .text_ocr import read_budget_data_in_page, read_core_content_in_page, read_budget_plan_in_page
-from .tree_manager import construct_tree_data, transform_budget_plan_data
-from .constants import BUDGET_TREE_DEFAULT_COLUMNS
+from .tree_manager import construct_tree_data, transform_budget_plan_data, convert_budget_dict_to_df
 
 class Page():
     def __init__(
@@ -69,35 +68,8 @@ class MinistryBudget():
         
     def get_budget_tree(self) -> pd.DataFrame:
         
-        budgetary_unit_tree_df = pd.DataFrame(columns=BUDGET_TREE_DEFAULT_COLUMNS)
-        if self.budgetary_units:
-            budgetary_unit_tree_df = pd.concat(
-                [
-                    budget_unit.get_budget_tree() for budget_unit in tqdm(
-                        self.budgetary_units, 
-                        desc=self.ministry_name,
-                        position=0
-                    )
-                    
-                ],
-                ignore_index=True
-            )
-        
-        ministry_header_df = pd.DataFrame(
-            [{
-                'budget_type': 'MINISTRY',
-                'name_1': self.ministry_name,
-                'amount': budgetary_unit_tree_df[
-                    budgetary_unit_tree_df['name_2'] != ''
-                ]['amount'].sum()
-            }],
-            columns=BUDGET_TREE_DEFAULT_COLUMNS
-        ).fillna('')
-        
-        return pd.concat(
-            [ministry_header_df, budgetary_unit_tree_df],
-            ignore_index=True
-        )
+        budget_tree_df = convert_budget_dict_to_df(self.to_dict())
+        return budget_tree_df
         
 class UnitBudget():
     
@@ -154,11 +126,6 @@ class UnitBudget():
             'page': self.unit_budget_page.page_num,
             'budget_plans': budget_plans
         }
-
-    def get_budget_tree(self) -> pd.DataFrame:
-        
-        return pd.DataFrame(columns=BUDGET_TREE_DEFAULT_COLUMNS)
-        
         
 class OutputBudget():
     def __init__(
@@ -194,24 +161,17 @@ class OutputBudget():
             'budget_plan_name': self.budget_plan_name,
             'name': self.output_name,
             'type': self.output_type,
-            'document': None,
             'page': self.output_pages[0].page_num,
         }
         
         # Read tree
         if self.budget_tree is None:
-            _ = self.get_budget_tree()
-            
-        output_dict['budget_details'] = self.budget_tree
-        
-        return output_dict
-       
-    def get_budget_tree(self) -> pd.DataFrame:
-        if self.budget_tree is None:
             budget_tree = self.read_budget_tree(self.output_pages[1:])
             self.budget_tree = budget_tree
             
-        return pd.DataFrame(columns=BUDGET_TREE_DEFAULT_COLUMNS)
+        output_dict['outputs'] = self.budget_tree          
+        
+        return output_dict
     
     def read_budget_tree(self, pages: List[Page]) -> List[Dict[str, Any]]:
         

@@ -20,8 +20,11 @@ def split_tree_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]
     if len(prefixes_stack) == 0:
       prefix, order = get_prefix_pattern(title)
       prefixes_stack.append((prefix, order))
+      # First level is OUTPUT/PROJECT
+      output_type = 'PROJECT' if 'โครงการ' in title else 'OUTPUT'
       result_data.append({
           'name': title,
+          'type': output_type,
           'amount': amount_val,
           'page': page_num,
           '_level': current_depth
@@ -36,6 +39,7 @@ def split_tree_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]
     if re.search(r"^ปี\s?25\d{2}", title):
       result_data.append({
           'name': title,
+          'type': 'FISCAL_YEAR_BUDGET',
           'amount': amount_val,
           'page': page_num,
           '_level': current_depth
@@ -50,6 +54,7 @@ def split_tree_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]
       prefixes_stack[-1] = (prefix, order)
       result_data.append({
           'name': title,
+          'type': 'BUDGET_DETAIL',
           'amount': amount_val,
           'page': page_num,
           '_level': current_depth
@@ -71,6 +76,7 @@ def split_tree_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]
       current_depth = match_idx
       result_data.append({
           'name': title,
+          'type': 'BUDGET_DETAIL',
           'amount': amount_val,
           'page': page_num,
           '_level': current_depth
@@ -82,6 +88,7 @@ def split_tree_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]
     current_depth = len(prefixes_stack) - 1
     result_data.append({
         'name': title,
+        'type': 'BUDGET_DETAIL',
         'amount': amount_val,
         'page': page_num,
         '_level': current_depth
@@ -118,32 +125,26 @@ def transform_budget_plan_data(outputs_data: List[Dict[str, str]]):
     for item in outputs_data:
         prefix = item["budget_plan_prefix"]
         name = item["budget_plan_name"]
-        output = {
-          "type": item.get('type'),
-          "name": item.get('name'),
-          "document": item.get('document'),
-          "page": item.get('page'),
-          "budget_details": item.get('budget_details')
-        }
+        outputs: List[Dict[str, Any]] = item.get('outputs', []) # type: ignore
         
         if prefix not in grouped:
             grouped[prefix] = {
                 "prefix": prefix,
                 "name": name,
                 "type": 'BUDGET_PLAN',
-                "document": item.get('document'),
                 "page": item.get('page'),
-                "outputs": []
+                "outputs": outputs
             }
         elif name is not None:
             grouped[prefix]["name"] = name
             
-        grouped[prefix]["outputs"].append(output)
+        grouped[prefix]["outputs"].extend(outputs)
     
     # Normalize 7.1
     if "7.1" in grouped:
       grouped["7.1"]["name"] = "แผนงานบุคลากรภาครัฐ"
-      grouped["7.1"]["outputs"] = []
+      budget_detail = grouped["7.1"].get("outputs", [{}])[0]
+      grouped["7.1"]["outputs"] = budget_detail.get('children')
         
     return list(grouped.values())
 
@@ -166,3 +167,48 @@ def add_depth_and_text(budget_tree: pd.DataFrame) -> pd.DataFrame:
     )
     
     return budget_tree
+
+def convert_budget_dict_to_df(data: dict) -> pd.DataFrame:
+    columns = BUDGET_TREE_DEFAULT_COLUMNS
+    
+    base_row = {col: "" for col in columns}
+    rows = []
+    child_keys = ['budgetary_units', 'budget_plans', 'outputs', 'budget_details', 'children']
+    
+    def traverse(node: dict, depth: int, current_row: dict):
+        if not isinstance(node, dict):
+            return
+            
+        row = current_row.copy()
+        
+        for i in range(1, 12):
+            row[f'name_{i}'] = ""
+        
+        if 'name' in node and depth <= 11:
+            name_val = node['name']
+            if node.get('prefix'):
+                name_val = f"{node['prefix']} {name_val}"
+            row[f'name_{depth}'] = name_val
+            
+        if 'type' in node:
+            row['budget_type'] = node['type']
+        else:
+            row['budget_type'] = "BUDGET_DETAIL"
+            
+        row['amount'] = node.get('amount', "")
+        
+        if node.get('document') is not None:
+            row['document'] = node['document']
+        if node.get('page') is not None:
+            row['page'] = node['page']
+            
+        rows.append(row)
+        
+        for key in child_keys:
+            if key in node and isinstance(node[key], list):
+                for child in node[key]:
+                    traverse(child, depth + 1, row)
+                    
+    traverse(data, 1, base_row)
+    
+    return pd.DataFrame(rows, columns=columns)
