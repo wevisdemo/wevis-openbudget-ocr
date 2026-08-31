@@ -241,13 +241,14 @@ class OutputBudget():
        
     def get_budget_tree(self) -> pd.DataFrame:
         if self.budget_tree is None:
-            self.read_budget_tree(self.output_pages[1:])
+            budget_tree = self.read_budget_tree(self.output_pages[1:])
+            self.budget_tree = budget_tree
             
-        # TODO: construct buduget tree df
         return pd.DataFrame(columns=BUDGET_TREE_DEFAULT_COLUMNS)
     
-    def read_budget_tree(self, pages: List[Page]) -> None:
+    def read_budget_tree(self, pages: List[Page]) -> List[Dict[str, Any]]:
         
+        budget_data = []
         for page in tqdm(
             pages, 
             leave=False,
@@ -255,14 +256,15 @@ class OutputBudget():
             position=2
         ):
             # Read budget data
-            budget_data = read_budget_data_in_page(page.page)
-            budget_data = [
-                item for item in budget_data if item.get('name', None) is not None
+            _current_page_budget_data = read_budget_data_in_page(page.page)
+            _current_page_budget_data = [
+                item for item in _current_page_budget_data if item.get('name', None) is not None
             ]
             # Add page
-            for item in budget_data:
+            for item in _current_page_budget_data:
                 item['page'] = page.page_num
+            budget_data.extend(_current_page_budget_data)
             
-            # Convert to tree dict
-            budget_tree = construct_tree_data(budget_data)
-            self.budget_tree = budget_tree
+        # Convert to tree dict
+        budget_tree = construct_tree_data(budget_data)
+        return budget_tree
