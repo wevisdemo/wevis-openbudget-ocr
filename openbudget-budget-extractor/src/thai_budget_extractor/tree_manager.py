@@ -125,6 +125,7 @@ def transform_budget_plan_data(outputs_data: List[Dict[str, str]]):
     for item in outputs_data:
         prefix = item["budget_plan_prefix"]
         name = item["budget_plan_name"]
+        amount = item["budget_plan_amount"]
         outputs: List[Dict[str, Any]] = item.get('outputs', []) # type: ignore
         
         if prefix not in grouped:
@@ -132,6 +133,7 @@ def transform_budget_plan_data(outputs_data: List[Dict[str, str]]):
                 "prefix": prefix,
                 "name": name,
                 "type": 'BUDGET_PLAN',
+                "amount": amount,
                 "page": item.get('page'),
                 "outputs": outputs
             }

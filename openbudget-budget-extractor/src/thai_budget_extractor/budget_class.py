@@ -147,6 +147,7 @@ class UnitBudget():
             'type': 'BUDGETARY_UNIT',
             'vision': self.get_vision(),
             'mission': self.get_mission(),
+            'amount': self.get_budget_amount(),
             'document': self.document,
             'page': self.unit_budget_page.page_num,
             'budget_plans': budget_plans
