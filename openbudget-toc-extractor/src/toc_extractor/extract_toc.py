@@ -5,6 +5,7 @@ from .ministry_of_higer_education_handler import ministry_of_higer_edu_data_to_t
 from .province_group_handler import province_group_data_to_toc
 from .lgo_handler import lgo_data_to_toc
 from .unit_name_manager import UnitNameManager
+from .working_capital_handler import convert_w_capital_data_to_toc
 
 def adjust_toc_levels(data_list):
     # Find the index of the element where title is "สารบัญ"
@@ -163,6 +164,8 @@ def extract_pdf_toc_to_json(
             ministry_of_higer_edu_data_to_toc(toc_data, ministries_toc, filename)
         elif any('ส่วนท้องถิ่น' in _title for _title in [toc_data[_].get('title', '') for _ in range(5)]):
             lgo_data_to_toc(toc_data, ministries_toc, filename)
+        elif any('ทุนหมุนเวียน' in _title for _title in [toc_data[_].get('title', '') for _ in range(len(toc_data))]):
+            convert_w_capital_data_to_toc(toc_data, ministries_toc, filename)
         else:
             convert_toc_data_to_toc(toc_data, ministries_toc, filename)
          
