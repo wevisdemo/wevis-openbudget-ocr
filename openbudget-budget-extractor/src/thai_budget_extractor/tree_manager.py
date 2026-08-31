@@ -146,6 +146,7 @@ def transform_budget_plan_data(outputs_data: List[Dict[str, str]]):
             grouped[prefix] = {
                 "prefix": prefix,
                 "name": name,
+                "type": 'BUDGET_PLAN',
                 "document": item.get('document'),
                 "page": item.get('page'),
                 "outputs": []

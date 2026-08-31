@@ -51,6 +51,7 @@ class MinistryBudget():
         
         ministry_dict = {
             'name': self.ministry_name,
+            'type': 'MINISTRY',
             'vision': self.get_vision(),
             'mission': self.get_mission(),
             'document': self.document,
@@ -146,6 +147,7 @@ class UnitBudget():
                 
         return {
             'name': self.unit_name,
+            'type': 'BUDGETARY_UNIT',
             'vision': self.get_vision(),
             'mission': self.get_mission(),
             'document': self.document,
