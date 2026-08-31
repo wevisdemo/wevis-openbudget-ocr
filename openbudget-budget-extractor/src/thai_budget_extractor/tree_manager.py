@@ -5,7 +5,7 @@ from .budget_text_manager import get_prefix_pattern
 from .constants import BUDGET_TREE_DEFAULT_COLUMNS
 
 
-def split_text_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def split_tree_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
   result_data = []
   current_depth = 0
 
@@ -91,7 +91,7 @@ def split_text_to_data(input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]
 
 def construct_tree_data(tree_data: List[Dict[str, Any]]) -> List[Dict]:
   # Assign _depth to each item
-  tree_data = split_text_to_data(tree_data)
+  tree_data = split_tree_to_data(tree_data)
 
   result, path = [], {}
 
