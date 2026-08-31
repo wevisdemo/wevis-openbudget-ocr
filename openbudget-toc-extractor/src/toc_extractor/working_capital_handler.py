@@ -39,7 +39,6 @@ def convert_w_capital_data_to_toc(
                 last_unit = None # reset unit for new ministry
                 continue
             elif re.search(r"(ทุนหมุนเวียน).*นิติบุคคล", title): # found group
-                print(title)
                 continue # skip
             # is budgetary unit
             elif last_unit and last_ministry:
