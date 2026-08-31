@@ -18,7 +18,7 @@ from selenium.webdriver.support import expected_conditions as EC
 def setup_driver():
     """Configures and returns a Selenium WebDriver instance."""
     chrome_options = Options()
-    chrome_options.add_argument("--headless")
+    # chrome_options.add_argument("--headless")
     driver = webdriver.Chrome(options=chrome_options)
     return driver
 
