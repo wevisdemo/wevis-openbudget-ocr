@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from .text_ocr import read_budget_data_in_page, read_core_content_in_page, read_budget_plan_in_page
-from .tree_manager import construct_tree_data, transform_budget_plan_data, rearrange_budget_plan_chunks, tree_df_to_nested_dict
+from .tree_manager import construct_tree_data, transform_budget_plan_data
 from .constants import BUDGET_TREE_DEFAULT_COLUMNS
 
 class Page():
