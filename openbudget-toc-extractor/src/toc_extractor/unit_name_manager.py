@@ -1,4 +1,5 @@
 from typing import List
+import re
 import pandas as pd
 from thefuzz import process
 
@@ -59,7 +60,14 @@ class UnitNameManager():
             original_name,
             all_units_name
         )
+        
+        result_name = original_name
         if matched_name:
-            return matched_name
-        return original_name
+            result_name = matched_name
+        
+        # Clean กองทุน
+        if re.search(r"เพื่อกองทุน", result_name):
+            result_name = re.sub(r".+?เพื่อ(?=กองทุน)", "", result_name)
+        
+        return result_name
     
