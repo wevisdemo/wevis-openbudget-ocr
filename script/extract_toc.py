@@ -10,7 +10,7 @@ def main():
     args = parser.parse_args()
     
     PDF_DIR_PATH = args.pdf_dir
-    TOC_OUT_PATH = args.toc_dir
+    TOC_OUT_PATH = args.toc_out
     
     # Check and create output path
     os.makedirs(TOC_OUT_PATH, exist_ok=True)
