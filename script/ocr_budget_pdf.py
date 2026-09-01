@@ -5,7 +5,7 @@ from thai_budget_extractor import extract_budget_object
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pdf_dir", default="example/pdf", help="Path to directory contains pdf files")
+    parser.add_argument("--pdf_dir", required=True, help="Path to directory contains pdf files")
     parser.add_argument("--toc_dir", default="output/toc", help="Output path for extracted Table of Content (json)")
     parser.add_argument("--tree_out", default="output/tree", help="Output path for extracted Budget Tree (csv)")
     parser.add_argument("--obj_out", default="output/obj", help="Output path for extracted Budget Object (json)")

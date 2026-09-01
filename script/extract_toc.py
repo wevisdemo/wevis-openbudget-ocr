@@ -4,7 +4,7 @@ from toc_extractor import extract_pdf_toc_to_json
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pdf_dir", default="example/pdf", help="Path to directory contains pdf files")
+    parser.add_argument("--pdf_dir", required=True, help="Path to directory contains pdf files")
     parser.add_argument("--toc_out", default="output/toc", help="Output path for extracted Table of Content (json)")
     
     args = parser.parse_args()
