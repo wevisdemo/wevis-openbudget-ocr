@@ -40,8 +40,8 @@ The `ocr_budget_pdf.py` script uses the TOC files generated in the previous step
 uv run python script/ocr_budget_pdf.py \
   --pdf_dir ./input_pdfs \
   --toc_dir ./output/toc \
-  --tree_out ./output/budget_tree.csv \
-  --obj_out ./output/budget_object.json
+  --tree_out ./output/tree \
+  --obj_out ./output/obj
 ```
 
 ### Arguments
