@@ -136,6 +136,9 @@ def convert_toc_data_to_toc(
             if last_unit:
                 last_unit['budget_page_start'] = page
                 last_unit['budget_page_stop'] = toc_data[item_id+1].get('page')
+            elif last_unit is None and last_ministry:
+                last_ministry['budget_page_start'] = page
+                last_ministry['budget_page_stop'] = toc_data[item_id+1].get('page')
         # Handle งบกลาง
         if re.search(r"^3\. รายละเอียดงบ", title) \
             and last_ministry and last_ministry.get('name') == 'งบกลาง': # found budget plan
@@ -144,6 +147,7 @@ def convert_toc_data_to_toc(
             
     if last_unit and last_ministry:
         last_ministry['budgetary_units'].append(last_unit)
+    if last_ministry:
         ministries_toc[last_ministry.get('name', '').strip()] = last_ministry
 
 def extract_pdf_toc_to_json(
