@@ -6,7 +6,7 @@ from thefuzz import process
 def get_closest_match(
     target_string: str, 
     string_list: List[str], 
-    threshold: int=85
+    threshold: int=95
 ) -> str|None:
     """
     Finds the closest string from a list based on a similarity threshold.
