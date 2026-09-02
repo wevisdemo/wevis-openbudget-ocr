@@ -44,7 +44,8 @@ def convert_w_capital_data_to_toc(
             elif last_unit and last_ministry:
                 last_ministry['budgetary_units'].append(last_unit)
                 title = UnitNameManager.get_unit_name(
-                    title
+                    title,
+                    ministries=['ทุนหมุนเวียน', 'กองทุนและเงินทุนหมุนเวียน']
                 ).strip()
             last_unit = {
                 'name': title,

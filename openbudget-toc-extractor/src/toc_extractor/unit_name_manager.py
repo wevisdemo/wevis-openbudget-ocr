@@ -50,11 +50,13 @@ class UnitNameManager():
         return original_name
 
     @classmethod
-    def get_unit_name(cls, original_name: str) -> str:
+    def get_unit_name(cls, original_name: str, ministries:List[str]=[]) -> str:
         if cls._unit_name_df is None:
             cls._unit_name_df = pd.read_csv(MIN_AGC_PATH)
         
         df = cls._unit_name_df
+        if ministries:
+            df = df[df['min_name'].isin(ministries)]
         all_units_name = list(df['agc_name'].unique())
         matched_name = get_closest_match(
             original_name,
@@ -67,7 +69,9 @@ class UnitNameManager():
         
         # Clean กองทุน
         if re.search(r"เพื่อกองทุน", result_name):
-            result_name = re.sub(r".+?เพื่อ(?=กองทุน)", "", result_name)
+            result_name = re.sub(r".+?เพื่อ(?=กองทุน)", "", result_name).strip()
+        elif re.search(r"สำหรับ\s?กองทุน", result_name):
+            result_name = re.sub(r".+?สำหรับ\s?(?=กองทุน)", "", result_name).strip()
         
         return result_name
     
