@@ -23,12 +23,17 @@ def convert_w_capital_data_to_toc(
         page = item.get('page', 0)
         if not re.search(r"^\d", title): # found name
             if current_lvl <= toc_level + 1:
+                if re.search(r"นิติ", title):
+                    continue
                 # is ministry
                 if last_ministry:
                     # Check and add last unit
                     if last_unit:
                         last_ministry['budgetary_units'].append(last_unit)
                     ministry_name = last_ministry.get('name', '').strip()
+                    if ministry_name in ministries_toc:
+                        ministries_toc[ministry_name]['budgetary_units'].extend(last_ministry['budgetary_units'])
+                        continue
                     ministries_toc[ministry_name] = last_ministry
                 last_ministry = {
                     'name': UnitNameManager.get_ministry_name(title).strip(),
@@ -38,8 +43,7 @@ def convert_w_capital_data_to_toc(
                 }
                 last_unit = None # reset unit for new ministry
                 continue
-            elif re.search(r"(ทุนหมุนเวียน).*นิติบุคคล", title): # found group
-                continue # skip
+            
             # is budgetary unit
             elif last_unit and last_ministry:
                 last_ministry['budgetary_units'].append(last_unit)
