@@ -124,7 +124,8 @@ def convert_toc_data_to_toc(
             elif last_unit and last_ministry:
                 last_ministry['budgetary_units'].append(last_unit)
                 title = UnitNameManager.get_unit_name(
-                    title
+                    title,
+                    ministries=[last_ministry.get('name', '')]
                 ).strip()
             last_unit = {
                 'name': title,
