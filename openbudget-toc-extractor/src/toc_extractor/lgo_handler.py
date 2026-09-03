@@ -30,15 +30,19 @@ class LGONameMatcher:
         
         # Clean name
         name = normalize_lgo_name(name)
+        
+        province_df = cls.lgo_name_df
+        if province:
+            province_df = cls.lgo_name_df[cls.lgo_name_df['จังหวัด'] == province]
             
-        exact_matched = cls.lgo_name_df[cls.lgo_name_df['ชื่อ อปท'] == name]
+        exact_matched = province_df[province_df['ชื่อ อปท'] == name]
         if len(exact_matched) == 1:
             row = exact_matched.iloc[0]
             return f"{row['ชื่อ อปท']} {row['อำเภอ']} {row['จังหวัด']}"
             
         df = cls.lgo_name_df.copy()
         df['score'] = df['ชื่อ อปท'].apply(lambda x: process.fuzz.ratio(name, str(x)))
-        matched = df[df['score'] > 90]
+        matched = df[df['score'] > 95]
         
         if matched.empty:
             # use only name instead
