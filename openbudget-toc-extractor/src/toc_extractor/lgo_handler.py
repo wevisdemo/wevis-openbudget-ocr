@@ -28,6 +28,10 @@ class LGONameMatcher:
             
         original_name = name
         
+        # Check if name is complete
+        if re.search(r"เทศบาล.{1,}อำเภอ.{1,}", name):
+            return name
+        
         # Clean name
         name = normalize_lgo_name(name)
         
