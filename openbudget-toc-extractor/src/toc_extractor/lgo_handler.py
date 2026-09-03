@@ -44,32 +44,33 @@ class LGONameMatcher:
             row = exact_matched.iloc[0]
             return f"{row['ชื่อ อปท']} {row['อำเภอ']} {row['จังหวัด']}"
             
-        df = cls.lgo_name_df.copy()
+        df = province_df.copy()
         df['score'] = df['ชื่อ อปท'].apply(lambda x: process.fuzz.ratio(name, str(x)))
         matched = df[df['score'] > 95]
-        
-        if matched.empty:
-            # use only name instead
-            lgo_name = re.sub(r"เทศบาล(ต.{,3}บล|เม.{,2}อง)", "", name)
-            exact_matched = cls.lgo_name_df[cls.lgo_name_df['ชื่อ'] == lgo_name]
-            if len(exact_matched) == 1:
-                row = exact_matched.iloc[0]
-                return f"{name} {row['อำเภอ']} {row['จังหวัด']}"
-            print(f"Cannot match : {original_name}")
-            return name
-            
         if len(matched) == 1:
             row = matched.iloc[0]
             return f"{row['ชื่อ อปท']} {row['อำเภอ']} {row['จังหวัด']}"
-            
-        if province:
-            prov_matched = matched[matched['จังหวัด'] == province]
-            if not prov_matched.empty:
-                matched = prov_matched
         
-        best_match = matched.loc[matched['score'].idxmax()]
-        return f"{best_match['ชื่อ อปท']} {best_match['อำเภอ']} {best_match['จังหวัด']}"
+        # Use only name instead
+        df = province_df.copy()
+        lgo_name = re.sub(r"เทศบาล(ต.{,3}บล|เม.{,2}อง)", "", name)
+        df['score'] = df['ชื่อ'].apply(lambda x: process.fuzz.ratio(lgo_name, str(x)))
+        matched = df[df['score'] > 95]
+        if len(matched) == 1:
+            row = matched.iloc[0]
+            return f"{name} {row['อำเภอ']} {row['จังหวัด']}"
         
+        # Search in all province
+        df = cls.lgo_name_df.copy()
+        df['score'] = df['ชื่อ อปท'].apply(lambda x: process.fuzz.ratio(name, str(x)))
+        matched = df[df['score'] > 95]
+        if len(matched) == 1:
+            row = matched.iloc[0]
+            return f"{row['ชื่อ อปท']} {row['อำเภอ']} {row['จังหวัด']}"
+        
+        print(f"Cannot match : {original_name} {province}")
+        return original_name
+
 THAILAND_LGO_PATH = "data/lgo_data.csv"
 def load_thailand_province_data() -> pd.DataFrame:
 
