@@ -67,11 +67,5 @@ class UnitNameManager():
         if matched_name:
             result_name = matched_name
         
-        # Clean กองทุน
-        if re.search(r"เพื่อกองทุน", result_name):
-            result_name = re.sub(r".+?เพื่อ(?=กองทุน)", "", result_name).strip()
-        elif re.search(r"สำหรับ\s?กองทุน", result_name):
-            result_name = re.sub(r".+?สำหรับ\s?(?=กองทุน)", "", result_name).strip()
-        
         return result_name
     
