@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import numpy.typing as npt
 from .constants import MINISTRY_NAMES
-from .budget_class import MinistryBudget, UnitBudget, OutputBudget, Page
+from .budget_class import MinistryBudget, UnitBudget, OutputBudget, Page, CentralBudget
 from .budget_tree_page_detector import is_budget_tree_page
 
 
@@ -109,15 +109,27 @@ def extract_budget_object(toc_data: Dict[str, Any], pdf_dir:str='pdf') -> Minist
             ) for p_num in range(budget_page_start, budget_page_stop) if is_budget_tree_page(load_pdf_page(os.path.join(pdf_dir ,ministry_doc), p_num))
         ])
         
-    ministry = MinistryBudget(
-        toc_data.get('name', ''),
-        ministry_doc,
-        Page(
-            load_pdf_page(os.path.join(pdf_dir ,ministry_doc), toc_data.get('unit_page', 0)), 
-            toc_data.get('unit_page', 0)
-        ),
-        budget_pages=ministry_budget_pages
-    )
+    ministry_name = toc_data.get('name', '')
+    if ministry_name == 'งบกลาง':
+        ministry = CentralBudget(
+            toc_data.get('name', ''),
+            ministry_doc,
+            Page(
+                load_pdf_page(os.path.join(pdf_dir ,ministry_doc), toc_data.get('unit_page', 0)), 
+                toc_data.get('unit_page', 0)
+            ),
+            budget_pages=ministry_budget_pages
+        )
+    else:
+        ministry = MinistryBudget(
+            toc_data.get('name', ''),
+            ministry_doc,
+            Page(
+                load_pdf_page(os.path.join(pdf_dir ,ministry_doc), toc_data.get('unit_page', 0)), 
+                toc_data.get('unit_page', 0)
+            ),
+            budget_pages=ministry_budget_pages
+        )
     ministry.budgetary_units = budgetary_units
     
     return ministry

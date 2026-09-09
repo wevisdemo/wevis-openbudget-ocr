@@ -111,6 +111,36 @@ class MinistryBudget():
         
         budget_tree_df = convert_budget_dict_to_df(self.to_dict())
         return budget_tree_df
+    
+class CentralBudget(MinistryBudget):
+    
+    def to_dict(self) -> Dict[str, Any]:
+            
+        ministry_dict = {
+            'name': self.ministry_name,
+            'type': 'MINISTRY',
+            'vision': self.get_vision(),
+            'mission': self.get_mission(),
+            'amount': self.get_budget_amount(),
+            'document': self.document,
+            'page': self.ministry_budget_page.page_num
+        }
+        
+        if self.budget_pages is not None:
+            for _ in tqdm(range(1), desc=self.ministry_name, position=0):
+                for _ in tqdm(range(1), desc=self.ministry_name, position=1):
+                    budgetary_units_tree = read_budget_tree(self.budget_pages[1:])
+        else:
+            budgetary_units_tree = [
+                budget_unit.to_dict() for budget_unit in tqdm(
+                    self.budgetary_units, 
+                    desc=self.ministry_name,
+                    position=0
+                )
+            ]
+            
+        ministry_dict['budgetary_units'] = budgetary_units_tree
+        return ministry_dict
         
 class UnitBudget():
     
