@@ -287,6 +287,7 @@ def read_texts(images: List[npt.NDArray]) -> str:
     result_texts = []
     for _img in images:
         img = trim_line_whitespace(_img)
+        img = cv2.GaussianBlur(img, (3, 3), 0)
         text = reader.recognize(img, blocklist=OCR_BLOCK_LIST)[0][1]  # type: ignore
         result_texts.append(text)
     return "\n".join(result_texts)
