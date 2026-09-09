@@ -252,36 +252,13 @@ class OutputBudget():
         
         # Read tree
         if self.budget_tree is None:
-            budget_tree = self.read_budget_tree(self.output_pages[1:])
+            budget_tree = read_budget_tree(self.output_pages[1:])
             self.budget_tree = budget_tree
             
         output_dict['outputs'] = self.budget_tree          
         
         return output_dict
-    
-    def read_budget_tree(self, pages: List[Page]) -> List[Dict[str, Any]]:
-        
-        budget_data = []
-        for page in tqdm(
-            pages, 
-            leave=False,
-            desc="process output", unit="pages",
-            position=2
-        ):
-            # Read budget data
-            _current_page_budget_data = read_budget_data_in_page(page.page)
-            _current_page_budget_data = [
-                item for item in _current_page_budget_data if item.get('name', None) is not None
-            ]
-            # Add page
-            for item in _current_page_budget_data:
-                item['page'] = page.page_num
-            budget_data.extend(_current_page_budget_data)
-            
-        # Convert to tree dict
-        budget_tree = construct_tree_data(budget_data)
-        return budget_tree
-    
+
 def read_budget_tree(pages: List[Page]) -> List[Dict[str, Any]]:
         
     budget_data = []
