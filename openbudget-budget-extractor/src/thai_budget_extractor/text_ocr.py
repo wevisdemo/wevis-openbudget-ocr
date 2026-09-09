@@ -364,6 +364,28 @@ def read_budget_plan_in_page(page: npt.NDArray,
     
     return result
 
+def read_lgo_full_name(page: npt.NDArray, top_margin_percentage:float=0.05) -> str|None:
+    
+    top_margin = int(page.shape[0] * top_margin_percentage)
+    
+    separator_bboxes = detect_separator_lines(page)
+    if separator_bboxes:
+        # Cropped page
+        top_line = separator_bboxes[-1]
+        # Crop page
+        cropped_page = page[top_margin+5:top_line[1]-5, :]
+        
+        # Detect text lines
+        text_lines = detect_text_lines(cropped_page)
+        if text_lines:
+            # Sort with y1
+            text_lines.sort(key=lambda t: t[1][1])
+            
+            # Read only last line
+            full_name = read_texts([text_lines[-1][0]])
+            return full_name
+    return
+
 def read_budget_amount_in_lgo_page(page: npt.NDArray) -> int:
     
     amount = 0

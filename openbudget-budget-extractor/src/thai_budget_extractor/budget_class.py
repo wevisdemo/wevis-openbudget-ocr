@@ -9,6 +9,7 @@ from .text_ocr import (
     read_budget_plan_in_page, 
     read_budget_amount_in_unit_page,
     read_budget_amount_in_output_page,
+    read_lgo_full_name,
     read_budget_amount_in_lgo_page
 )
 from .tree_manager import construct_tree_data, transform_budget_plan_data, convert_budget_dict_to_df
@@ -212,7 +213,10 @@ class UnitBudget():
 class LocalOrgBudget(UnitBudget):
     
     def read_budget_data(self) -> None:
-        # TODO: read lgo full name
+        full_name = read_lgo_full_name(self.unit_budget_page.page)
+        if full_name:
+            # TODO: normalize name with lgo_data.csv
+            self.unit_name = full_name
         self.vision = ""
         self.mission = ""
         budget_amount = read_budget_amount_in_lgo_page(self.unit_budget_page.page)
