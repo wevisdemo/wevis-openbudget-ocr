@@ -1,6 +1,7 @@
 from typing import List, Dict, Any
 import re
 import pandas as pd
+import numpy as np
 from .budget_text_manager import get_prefix_pattern
 from .constants import BUDGET_TREE_DEFAULT_COLUMNS
 
@@ -170,47 +171,59 @@ def add_depth_and_text(budget_tree: pd.DataFrame) -> pd.DataFrame:
     
     return budget_tree
 
-def convert_budget_dict_to_df(data: dict) -> pd.DataFrame:
+def convert_budget_dict_to_df(data: Dict[str, Any]) -> pd.DataFrame:
     columns = BUDGET_TREE_DEFAULT_COLUMNS
     
-    base_row = {col: "" for col in columns}
-    rows = []
-    child_keys = ['budgetary_units', 'budget_plans', 'outputs', 'budget_details', 'children']
-    
-    def traverse(node: dict, depth: int, current_row: dict):
+    def traverse(node, depth, current_names):
         if not isinstance(node, dict):
-            return
+            return []
             
-        row = current_row.copy()
+        prefix = node.get("prefix", "")
+        name = node.get("name", "")
+        full_name = f"{prefix} {name}".strip() if prefix else name
         
-        for i in range(1, 12):
-            row[f'name_{i}'] = ""
-        
-        if 'name' in node and depth <= 11:
-            name_val = node['name']
-            if node.get('prefix'):
-                name_val = f"{node['prefix']} {name_val}"
-            row[f'name_{depth}'] = name_val
+        names = current_names.copy()
+        if depth <= 11:
+            names[f"name_{depth}"] = full_name
             
-        if 'type' in node:
-            row['budget_type'] = node['type']
-        else:
-            row['budget_type'] = "BUDGET_DETAIL"
-            
-        row['amount'] = node.get('amount', "")
+        row = {col: "" for col in columns}
+        row.update(names)
         
-        if node.get('document') is not None:
-            row['document'] = node['document']
-        if node.get('page') is not None:
-            row['page'] = node['page']
-            
-        rows.append(row)
+        row["budget_type"] = node.get("type", "")
+        row["amount"] = node.get("amount", "")
+        row["document"] = node.get("document", "")
+        row["page"] = node.get("page", "")
+        row["error_message"] = node.get("error_message", "")
         
-        for key in child_keys:
-            if key in node and isinstance(node[key], list):
-                for child in node[key]:
-                    traverse(child, depth + 1, row)
-                    
-    traverse(data, 1, base_row)
+        # Handle fiscal_year
+        row["fiscal_year"] = node.get("fiscal_year", "")
+        row["fiscal_year_end"] = node.get("fiscal_year_end", "")
+        if re.search(r"^ปี\s?25\d{2}", full_name):
+            years = re.findall(r"25\d{2}", full_name)
+            row["fiscal_year"] = years[0].strip()
+            row["fiscal_year_end"] = years[-1].strip()
+        
+        rows = [row]
+        
+        for val in node.values():
+            if isinstance(val, dict) and "name" in val:
+                rows.extend(traverse(val, depth + 1, names))
+            elif isinstance(val, list):
+                for item in val:
+                    if isinstance(item, dict) and "name" in item:
+                        rows.extend(traverse(item, depth + 1, names))
+                        
+        return rows
+
+    flat_data = traverse(data, 1, {})
     
-    return pd.DataFrame(rows, columns=columns)
+    # Replace consecutive duplicates in column 'name_X' with empty string
+    result_tree_df = pd.DataFrame(flat_data, columns=columns)
+    for i in range(1, 11+1):
+        result_tree_df.loc[result_tree_df[f"name_{i}"] == result_tree_df[f"name_{i}"].shift(), f"name_{i}"] = ''
+        
+    # Fill in document
+    result_tree_df.loc[:, 'document'] = result_tree_df['document'].replace("", np.nan)
+    result_tree_df['document'] = result_tree_df['document'].ffill()
+    
+    return result_tree_df

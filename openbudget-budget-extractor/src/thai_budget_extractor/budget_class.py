@@ -26,11 +26,14 @@ class MinistryBudget():
         self,
         ministry_name: str,
         document: str,
-        ministry_budget_page: Page
+        ministry_budget_page: Page,
+        budget_pages: List[Page]|None=None,
     ):
         self.ministry_name = ministry_name
         self.ministry_budget_page = ministry_budget_page
         self.budgetary_units: List[UnitBudget] = []
+        
+        self.budget_pages = budget_pages
         
         self.document = document
         
@@ -38,6 +41,8 @@ class MinistryBudget():
         self.mission = None
         
         self.amount = None
+        
+        self.budget_tree = None
         
     def get_vision(self) -> str|None:
         if self.vision is None:
@@ -63,6 +68,9 @@ class MinistryBudget():
         
     def to_dict(self) -> Dict[str, Any]:
         
+        if self.budget_tree:
+            return self.budget_tree
+        
         ministry_dict = {
             'name': self.ministry_name,
             'type': 'MINISTRY',
@@ -70,17 +78,34 @@ class MinistryBudget():
             'mission': self.get_mission(),
             'amount': self.get_budget_amount(),
             'document': self.document,
-            'page': self.ministry_budget_page.page_num,
-            'budgetary_units': [
+            'page': self.ministry_budget_page.page_num
+        }
+        
+        if self.budget_pages is not None:
+            budget_plan = read_budget_plan_in_page(self.budget_pages[0].page)
+            budget_amount = read_budget_amount_in_output_page(self.budget_pages[0].page)
+            budgetary_units_tree = {
+                "prefix": budget_plan.get('budget_plan_prefix'),
+                "name": budget_plan.get('budget_plan_name'),
+                "type": "BUDGET_PLAN",
+                "amount": budget_amount,
+                "page": self.budget_pages[0].page_num,
+            }
+            for _ in tqdm(range(1), desc=self.ministry_name, position=0):
+                for _ in tqdm(range(1), desc=self.ministry_name, position=1):
+                    budgetary_units_tree['outputs'] = read_budget_tree(self.budget_pages[1:])
+        else:
+            budgetary_units_tree = [
                 budget_unit.to_dict() for budget_unit in tqdm(
                     self.budgetary_units, 
                     desc=self.ministry_name,
                     position=0
                 )
             ]
-        }
+        ministry_dict['budgetary_units'] = budgetary_units_tree
         
-        return ministry_dict
+        self.budget_tree = ministry_dict
+        return self.budget_tree
         
     def get_budget_tree_df(self) -> pd.DataFrame:
         
@@ -226,3 +251,26 @@ class OutputBudget():
         # Convert to tree dict
         budget_tree = construct_tree_data(budget_data)
         return budget_tree
+    
+def read_budget_tree(pages: List[Page]) -> List[Dict[str, Any]]:
+        
+    budget_data = []
+    for page in tqdm(
+        pages, 
+        leave=False,
+        desc="process output", unit="pages",
+        position=2
+    ):
+        # Read budget data
+        _current_page_budget_data = read_budget_data_in_page(page.page)
+        _current_page_budget_data = [
+            item for item in _current_page_budget_data if item.get('name', None) is not None
+        ]
+        # Add page
+        for item in _current_page_budget_data:
+            item['page'] = page.page_num
+        budget_data.extend(_current_page_budget_data)
+        
+    # Convert to tree dict
+    budget_tree = construct_tree_data(budget_data)
+    return budget_tree

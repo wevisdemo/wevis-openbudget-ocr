@@ -93,6 +93,22 @@ def extract_budget_object(toc_data: Dict[str, Any], pdf_dir:str='pdf') -> Minist
         budgetary_units.append(budgetary_unit)
         
     ministry_doc = toc_data.get('document', '')
+    ministry_budget_pages = None
+    if toc_data.get('budget_page_start'):
+        budget_page_start = toc_data.get('budget_page_start', 0)
+        budget_page_stop = toc_data.get('budget_page_stop', 1)
+        # Filter only the first budget page and the rest of budget tree
+        ministry_budget_pages = [Page(
+            load_pdf_page(os.path.join(pdf_dir ,ministry_doc), budget_page_start), 
+            budget_page_start
+        )]
+        ministry_budget_pages.extend([
+            Page(
+                load_pdf_page(os.path.join(pdf_dir ,ministry_doc), p_num),
+                p_num
+            ) for p_num in range(budget_page_start, budget_page_stop) if is_budget_tree_page(load_pdf_page(os.path.join(pdf_dir ,ministry_doc), p_num))
+        ])
+        
     ministry = MinistryBudget(
         toc_data.get('name', ''),
         ministry_doc,
@@ -100,6 +116,7 @@ def extract_budget_object(toc_data: Dict[str, Any], pdf_dir:str='pdf') -> Minist
             load_pdf_page(os.path.join(pdf_dir ,ministry_doc), toc_data.get('unit_page', 0)), 
             toc_data.get('unit_page', 0)
         ),
+        budget_pages=ministry_budget_pages
     )
     ministry.budgetary_units = budgetary_units
     
