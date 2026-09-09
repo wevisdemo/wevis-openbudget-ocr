@@ -363,3 +363,30 @@ def read_budget_plan_in_page(page: npt.NDArray,
         result['output_name'] = output_name
     
     return result
+
+def read_budget_amount_in_lgo_page(page: npt.NDArray) -> int:
+    
+    amount = 0
+    
+    # Detect separator lines    
+    separator_bboxes = detect_separator_lines(page)
+    # Get the lowest line and crop page again
+    separator_bboxes = sorted(
+        separator_bboxes, 
+        key=lambda bb: bb[3] # y2
+    )
+    
+    # Check if there are more than 3 lines
+    if len(separator_bboxes) >= 3:
+        top_line = separator_bboxes[1]
+        btm_line = separator_bboxes[2]
+        # Crop page
+        cropped_page = page[top_line[3]+5:btm_line[1]-5, :]
+        amount_img = crop_top_right_amount(cropped_page)
+        amount_text = read_texts([amount_img])
+        
+        cleaned_amount_text = re.sub(r"\D", "", amount_text)
+        amount = int(cleaned_amount_text) if cleaned_amount_text else 0
+        
+    return amount
+    

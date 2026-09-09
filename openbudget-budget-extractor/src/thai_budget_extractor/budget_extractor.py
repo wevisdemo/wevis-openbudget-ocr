@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import numpy.typing as npt
 from .constants import MINISTRY_NAMES
-from .budget_class import MinistryBudget, UnitBudget, OutputBudget, Page, CentralBudget
+from .budget_class import MinistryBudget, UnitBudget, OutputBudget, Page, CentralBudget, LocalOrgBudget
 from .budget_tree_page_detector import is_budget_tree_page
 
 
@@ -61,8 +61,20 @@ def extract_budget_object(toc_data: Dict[str, Any], pdf_dir:str='pdf') -> Minist
         budget_start_page = toc_budgetary_unit.get('budget_page_start', 0)
         budget_stop_page = toc_budgetary_unit.get('budget_page_stop', -1)
         
-        if budget_start_page is None or budget_stop_page is None or \
-            budget_stop_page < budget_start_page:
+        if budget_start_page is None or budget_stop_page is None or budget_stop_page < budget_start_page:
+            unit_name = toc_budgetary_unit.get('name', '')
+            import re
+            if re.search(r"^(เทศบาล|องค์การ)", unit_name):
+                budgetary_unit = LocalOrgBudget(
+                    unit_name=toc_budgetary_unit.get('name'),
+                    document=unit_doc_path,
+                    unit_budget_page=Page(
+                        page_img,
+                        unit_page_num
+                    )
+                )
+                budgetary_units.append(budgetary_unit)
+                continue
             budget_pages = []
         else:
             budget_pages = [

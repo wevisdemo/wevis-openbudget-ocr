@@ -8,7 +8,8 @@ from .text_ocr import (
     read_core_content_in_page, 
     read_budget_plan_in_page, 
     read_budget_amount_in_unit_page,
-    read_budget_amount_in_output_page
+    read_budget_amount_in_output_page,
+    read_budget_amount_in_lgo_page
 )
 from .tree_manager import construct_tree_data, transform_budget_plan_data, convert_budget_dict_to_df
 
@@ -208,6 +209,34 @@ class UnitBudget():
             'budget_plans': budget_plans
         }
         
+class LocalOrgBudget(UnitBudget):
+    
+    def read_budget_data(self) -> None:
+        # TODO: read lgo full name
+        self.vision = ""
+        self.mission = ""
+        budget_amount = read_budget_amount_in_lgo_page(self.unit_budget_page.page)
+        self.amount = budget_amount
+        
+    def to_dict(self) -> Dict[str, Any]:
+            
+        # TODO: read budget tree in unit page
+        outputs = []
+        
+        # Add each output within budget plan
+        budget_plans = transform_budget_plan_data(outputs)
+                
+        return {
+            'name': self.unit_name,
+            'type': 'BUDGETARY_UNIT',
+            'vision': self.get_vision(),
+            'mission': self.get_mission(),
+            'amount': self.get_budget_amount(),
+            'document': self.document,
+            'page': self.unit_budget_page.page_num,
+            'budget_plans': budget_plans
+        }
+    
 class OutputBudget():
     def __init__(
         self,
