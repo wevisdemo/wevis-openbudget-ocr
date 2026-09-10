@@ -412,3 +412,43 @@ def read_budget_amount_in_lgo_page(page: npt.NDArray) -> int:
         
     return amount
     
+def read_budget_tree_in_lgo_page(
+    page: npt.NDArray,
+    top_margin_percentage: float=0.05,
+) -> List[Dict[str, Any]]:
+    
+    # Crop page
+    # Detect separator lines    
+    top_margin = int(page.shape[0] * top_margin_percentage)
+    separator_bboxes = detect_separator_lines(page)
+    # Get the lowest line and crop page again
+    separator_bboxes = sorted(
+        separator_bboxes, 
+        key=lambda bb: bb[3] # y2
+    )
+    last_line = separator_bboxes[-1]
+    cropped_page = page[last_line[3] + top_margin:, :]
+    
+    # Dilate page
+    _, thresh = cv2.threshold(cropped_page, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    
+    # Horizontal dilation on the cropped column to group text into rows and find the topmost one
+    kernel = np.ones((10, 10), np.uint8)
+    dilated = cv2.dilate(thresh, kernel, iterations=2)
+    
+    cropped_dilated = dilated[:, int(dilated.shape[1] * 0.25) : int(dilated.shape[1] * 0.75)]
+    
+    is_white = (cropped_dilated == 255)
+    all_white_rows = np.all(is_white, axis=1)
+    white_row_indices = np.where(all_white_rows)[0]
+
+    if len(white_row_indices) > 0:
+        last_row_idx = white_row_indices[-1]
+        cropped_img = cropped_page[last_row_idx + 5:, :]
+    
+        return read_budget_data_in_page(
+            cropped_img,
+            top_margin_percentage=0
+        )
+    
+    return []
