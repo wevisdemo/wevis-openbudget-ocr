@@ -65,13 +65,25 @@ def extract_budget_object(toc_data: Dict[str, Any], pdf_dir:str='pdf') -> Minist
             unit_name = toc_budgetary_unit.get('name', '')
             import re
             if re.search(r"^(เทศบาล|องค์การ)", unit_name):
+                budget_pages = []
+                # Check next page to see if it a tree
+                next_page = load_pdf_page(
+                    os.path.join(pdf_dir, unit_doc_path),
+                    unit_page_num + 1
+                )
+                if is_budget_tree_page(next_page):
+                    budget_pages.append(Page(
+                        next_page,
+                        unit_page_num + 1
+                    ))
                 budgetary_unit = LocalOrgBudget(
                     unit_name=toc_budgetary_unit.get('name'),
                     document=unit_doc_path,
                     unit_budget_page=Page(
                         page_img,
                         unit_page_num
-                    )
+                    ),
+                    budget_pages=budget_pages
                 )
                 budgetary_units.append(budgetary_unit)
                 continue

@@ -213,6 +213,16 @@ class UnitBudget():
         
 class LocalOrgBudget(UnitBudget):
     
+    def __init__(
+        self,
+        unit_name: str,
+        document: str,
+        unit_budget_page: Page,
+        budget_pages: List[Page]=[]
+    ):
+        super().__init__(unit_name, document, unit_budget_page) 
+        self.budget_pages = budget_pages
+    
     def read_budget_data(self) -> None:
         full_name = read_lgo_full_name(self.unit_budget_page.page)
         if full_name:
@@ -226,6 +236,8 @@ class LocalOrgBudget(UnitBudget):
     def to_dict(self) -> Dict[str, Any]:
             
         outputs = read_budget_tree_in_lgo_page(self.unit_budget_page.page)
+        if self.budget_pages:
+            outputs.extend(read_budget_tree(self.budget_pages))
         outputs = [
             item for item in outputs if item.get('name', None) is not None
         ]
