@@ -120,7 +120,7 @@ def construct_tree_data(tree_data: List[Dict[str, Any]]) -> List[Dict]:
 
   return result
   
-def transform_budget_plan_data(outputs_data: List[Dict[str, str]]):
+def transform_budget_plan_data(outputs_data: List[Dict[str, Any]]):
     grouped = {}
     
     for item in outputs_data:
@@ -138,6 +138,7 @@ def transform_budget_plan_data(outputs_data: List[Dict[str, str]]):
                 "page": item.get('page'),
                 "outputs": outputs
             }
+            continue
         elif name is not None:
             grouped[prefix]["name"] = name
             
